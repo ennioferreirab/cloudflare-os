@@ -44,7 +44,7 @@ export type GetGatekeeperFn = (gatekeeperId: number) => GatekeeperActionTarget;
  */
 export type ManualApproval = { frontier: number, resolvedBy: AiChatAuthorInfo };
 
-type StagedSync = {
+type StagedPass = {
   manualApprovals: ManualApproval[];
   resolve: (decided: number[]) => void;
   reject: (error: unknown) => void;
@@ -67,7 +67,7 @@ export function isMethodMissing(error: unknown): boolean {
 export class ActionSyncDriver {
   // Per-gatekeeper intent for the NEXT pass. A key is present while a request waits to be picked
   // up; requests arriving mid-pass merge here, so work submitted during a pass isn't lost.
-  #staged = new Map<number, StagedSync>();
+  #staged = new Map<number, StagedPass>();
 
   // Per-gatekeeper single-flight guard. Key present => a run loop is active for that gatekeeper.
   #running = new Map<number, Promise<void>>();
@@ -85,7 +85,7 @@ export class ActionSyncDriver {
    * workspace record IDs decided (approved or cascade-rejected) by the pass that carried this
    * request's intent. Concurrent calls for the same gatekeeper coalesce into one pass.
    */
-  sync(gatekeeperId: number, manualApproval?: ManualApproval): Promise<number[]> {
+  apply(gatekeeperId: number, manualApproval?: ManualApproval): Promise<number[]> {
     let slot = this.#staged.get(gatekeeperId);
     if (!slot) {
       slot = { manualApprovals: [], ...Promise.withResolvers<number[]>() };
@@ -100,10 +100,10 @@ export class ActionSyncDriver {
   }
 
   /**
-   * Resolves once no sync pass is in flight for the gatekeeper. Used by rejection: a veto must
+   * Resolves once no apply pass is in flight for the gatekeeper. Used by rejection: a veto must
    * never be staged while a pass that might apply the same action is mid-RPC.
    */
-  async settled(gatekeeperId: number): Promise<void> {
+  async awaitSettled(gatekeeperId: number): Promise<void> {
     for (;;) {
       let running = this.#running.get(gatekeeperId);
       if (!running) return;
@@ -118,8 +118,13 @@ export class ActionSyncDriver {
         if (!slot) break;
         this.#staged.delete(gatekeeperId);
         try {
-          slot.resolve(await this.#syncOnce(gatekeeperId, slot.manualApprovals));
+          slot.resolve(await this.#applyOnce(gatekeeperId, slot.manualApprovals));
         } catch (error) {
+          // Two callers deliver a pass through waitUntil (rejection, auto-approve opt-in) and
+          // never see this rejection, so log it here; awaiting callers still get the error.
+          logger.warn("action sync pass failed", {
+            event: "action.sync.failed", gatekeeperId, error,
+          });
           slot.reject(error);
         }
       }
@@ -130,7 +135,7 @@ export class ActionSyncDriver {
     }
   }
 
-  async #syncOnce(gatekeeperId: number, manualApprovals: ManualApproval[]): Promise<number[]> {
+  async #applyOnce(gatekeeperId: number, manualApprovals: ManualApproval[]): Promise<number[]> {
     // Materialize before reconciling: index reads are lazy, and the pass mutates both indexes. The
     // pending index was backfilled by the action-index migration; vetoPending only exists on records
     // written after its index was introduced, so it needs no legacy backfill. Both are keyed by the
