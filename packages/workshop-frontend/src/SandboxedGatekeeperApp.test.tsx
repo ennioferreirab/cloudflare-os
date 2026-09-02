@@ -18,6 +18,7 @@ import type {
   GatekeeperAppThemeReceiver,
 } from "@gadgets/workshop-shared/theme";
 import SandboxedGatekeeperApp from "./SandboxedGatekeeperApp";
+import { changeLocale } from "./i18n";
 
 vi.mock("./ThemeContext", () => ({
   useTheme: () => ({ resolvedThemeMode: "light" }),
@@ -46,6 +47,7 @@ vi.mock("./AuthContext", () => ({
 
 interface TestHost extends RpcTarget {
   subscribeTheme(receiver: GatekeeperAppThemeReceiver): Promise<GatekeeperAppTheme>;
+  subscribeLocale(receiver: TestLocaleReceiver): Promise<string>;
   setPresenting(active: boolean): Promise<{
     rect: { left: number; top: number; width: number; height: number } | null;
     willResize: boolean;
@@ -61,13 +63,22 @@ class TestThemeReceiver extends RpcTarget implements GatekeeperAppThemeReceiver 
   setTheme(_theme: GatekeeperAppTheme): void {}
 }
 
+class TestLocaleReceiver extends RpcTarget {
+  locale: string | undefined;
+
+  setLocale(locale: string): void {
+    this.locale = locale;
+  }
+}
+
 describe("SandboxedGatekeeperApp navigation", () => {
   let container: HTMLDivElement | undefined;
   let root: Root | undefined;
   let host: RpcStub<TestHost> | undefined;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     listGadgets.mockClear();
+    await changeLocale("pt-BR");
   });
 
   afterEach(async () => {
@@ -118,6 +129,12 @@ describe("SandboxedGatekeeperApp navigation", () => {
     await expect(host.subscribeTheme(themeReceiver)).resolves.toEqual({
       mode: "light",
       accentColor: "#7c3aed",
+    });
+    const localeReceiver = new TestLocaleReceiver();
+    await expect(host.subscribeLocale(localeReceiver)).resolves.toBe("pt-BR");
+    await act(async () => {
+      await changeLocale("en");
+      await vi.waitFor(() => expect(localeReceiver.locale).toBe("en"));
     });
 
     await act(async () => {

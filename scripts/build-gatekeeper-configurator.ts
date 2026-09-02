@@ -110,6 +110,7 @@ const root = document.getElementById("root");
 let host;
 let ui;
 let spec;
+let locale = "en";
 let values = {};
 let queryByName = {};
 let validationErrorByName = {};
@@ -660,7 +661,7 @@ function render(focusState = undefined, preserveCheckboxScroll = false) {
   renderedCheckboxNames = new Set();
   isRendering = true;
   root.replaceChildren(el("div", { id: "layout-root" }, [
-    spec.render({ ui, values, setValues, clearFields, components }),
+    spec.render({ ui, locale, values, setValues, clearFields, components }),
   ]));
   isRendering = false;
   if (checkboxScrollOffsets) {
@@ -694,6 +695,12 @@ class ResourceConfiguratorIframe extends RpcTarget {
       throw new Error("Configurator did not provide a resource URL.");
     }
     return resourceUrl;
+  }
+
+  updateLocale(nextLocale) {
+    locale = nextLocale === "pt-BR" ? "pt-BR" : "en";
+    document.documentElement.lang = locale;
+    render();
   }
 
   updateViewport(iframeTop, viewportHeight) {

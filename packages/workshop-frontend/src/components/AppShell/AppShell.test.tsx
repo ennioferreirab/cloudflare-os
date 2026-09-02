@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@tanstack/react-router', () => ({ useRouterState: () => '/' }))
 
 vi.mock('../../RpcContext', () => ({ useConnectionLost: () => false }))
-vi.mock('../../TopBarNotice', () => ({ default: () => null }))
+vi.mock('../../TopBarNotice', () => ({ default: () => <div data-testid="top-bar-notice" /> }))
 vi.mock('./CommandPalette', () => ({ default: () => null }))
 vi.mock('./Sidebar', () => ({
   default: () => <aside data-testid="sidebar" />,
@@ -34,5 +34,13 @@ describe('AppShell', () => {
 
     const sidebarContainer = container.querySelector('[data-testid="sidebar"]')?.parentElement
     expect(sidebarContainer?.classList.contains('h-full')).toBe(true)
+  })
+
+  it('hides the top-bar notice on Home', () => {
+    container = document.createElement('div')
+    root = createRoot(container)
+    act(() => root!.render(<AppShell><div /></AppShell>))
+
+    expect(container.querySelector('[data-testid="top-bar-notice"]')).toBeNull()
   })
 })

@@ -1,0 +1,243 @@
+/**
+ * Messages used by the deployment administration page.
+ *
+ * Values supplied by the deployment administrator, gatekeepers, and blueprints stay outside this
+ * catalog and are rendered exactly as received.
+ */
+const en = {
+  adminArea: {
+    pageTitle: 'Admin',
+    accessDenied: "You don't have access to this page.",
+    loading: 'Loading admin settings…',
+    loadError: 'Something went wrong loading admin settings.',
+    tryAgain: 'Try again',
+    description: 'Deployment-wide settings. Changes apply to all users on their next connection.',
+    tabs: {
+      general: 'General',
+      gatekeepers: 'Gatekeepers',
+      formats: 'Formats',
+      access: 'Access',
+    },
+    errors: {
+      updateFailed: 'Update failed',
+      saveAnnouncementFailed: 'Failed to save announcement',
+      saveBannerFailed: 'Failed to save banner',
+      saveSiteNameFailed: 'Failed to save site name',
+      saveLogoFailed: 'Failed to save logo',
+      removeLogoFailed: 'Failed to remove logo',
+      saveInstructionsFailed: 'Failed to save instructions',
+    },
+    toasts: {
+      announcementSaved: 'Announcement saved',
+      bannerSaved: 'Banner saved',
+      siteNameSaved: 'Site name saved',
+      logoSaved: 'Logo saved',
+      defaultLogoRestored: 'Default logo restored',
+      instructionsSaved: 'System prompt instructions saved',
+    },
+    signups: {
+      title: 'Allow new sign-ups',
+      description: 'When off, existing users can still log in but no new accounts can be created.',
+    },
+    siteName: {
+      title: 'Site name',
+      description:
+        'Shown next to the logo in the top bar. Leave empty to use the default ("{{defaultName}}"). Applies on each user’s next connection.',
+    },
+    logo: {
+      title: 'Logo',
+      description:
+        'Shown in the app chrome, sign-in screens, and browser tab. Images are scaled without cropping and converted to a static PNG. Square images work best. Applies on each user’s next connection.',
+      change: 'Change logo',
+      upload: 'Upload logo',
+      restore: 'Restore default',
+    },
+    identity: {
+      title: 'ScaleOS identity',
+      description:
+        'ScaleOS uses a fixed light theme and a fixed blue accent across the application.',
+      brand: 'Brand',
+      brandName: 'ScaleOS',
+      theme: 'Theme',
+      themeValue: 'Light',
+      accent: 'Accent',
+      accentValue: 'Blue',
+      locked: 'Managed by ScaleOS',
+    },
+    banner: {
+      title: 'Banner',
+      description:
+        'A dismissible bar across the very top of the app (logged in or not). Markdown is supported, so you can include links. Leave empty to hide it. Applies on each user’s next connection.',
+      placeholder:
+        'e.g. 🎉 New: blueprints now support imports — [learn more](https://example.com).',
+      tooLongBy: 'Too long by {{count}} characters',
+      type: 'Type',
+      colors: {
+        neutral: 'Neutral',
+        info: 'Info',
+        success: 'Success',
+        warning: 'Warning',
+        danger: 'Danger',
+        brand: 'Brand',
+      },
+    },
+    topBarNotice: {
+      title: 'Top-bar notice',
+      description:
+        'Shown centered in the top navigation bar. Markdown is supported, so you can include links. Keep it short — it renders on a single line. Leave empty to show nothing. Applies on each user’s next connection.',
+      placeholder:
+        'e.g. Heads up: scheduled maintenance Saturday — see [status](https://status.example.com).',
+    },
+    instructions: {
+      title: 'Agent instructions',
+      description:
+        'Extra instructions added to every agent’s system prompt on this deployment. Use this for instance-specific context, conventions, or guardrails.',
+      placeholder:
+        'e.g. ACME Corp is a logistics company that helps small businesses ship\ninternationally. Our team builds internal tools and dashboards to track shipments.',
+    },
+    characters: '{{used}} / {{maximum}} characters',
+    reset: 'Reset',
+    save: 'Save',
+    gatekeepers: {
+      title: 'Gatekeepers',
+      description:
+        'Turn connectors and resource types on or off for each service. Auto-provisioned gatekeepers (like the Context Library) have three modes — disabled, optional, or enabled for everyone. Changes are soft: they don’t revoke access a gadget already holds.',
+      noneInstalled: 'No configurable gatekeepers are installed on this deployment.',
+      autoProvisioned: 'auto-provisioned',
+      modes: {
+        disabled: 'Disabled',
+        optional: 'Optional',
+        enabled: 'Enabled',
+        offForEveryone: 'Off for everyone',
+        usersCanAdd: 'Users can add it themselves',
+        onForEveryone: 'On for everyone automatically',
+      },
+      off: 'Off',
+      disabledBadge: 'disabled',
+      hiddenResourcesOne: '{{count}} resource hidden while disabled.',
+      hiddenResourcesMany: '{{count}} resources hidden while disabled.',
+    },
+  },
+} as const
+
+const ptBR = {
+  adminArea: {
+    pageTitle: 'Administração',
+    accessDenied: 'Você não tem acesso a esta página.',
+    loading: 'Carregando configurações da administração…',
+    loadError: 'Algo deu errado ao carregar as configurações da administração.',
+    tryAgain: 'Tentar novamente',
+    description: 'Configurações de toda a implantação. As mudanças valem para todos os usuários na próxima conexão.',
+    tabs: {
+      general: 'Geral',
+      gatekeepers: 'Guardiões',
+      formats: 'Formatos',
+      access: 'Acesso',
+    },
+    errors: {
+      updateFailed: 'Falha ao atualizar',
+      saveAnnouncementFailed: 'Não foi possível salvar o aviso',
+      saveBannerFailed: 'Não foi possível salvar o banner',
+      saveSiteNameFailed: 'Não foi possível salvar o nome do site',
+      saveLogoFailed: 'Não foi possível salvar o logo',
+      removeLogoFailed: 'Não foi possível remover o logo',
+      saveInstructionsFailed: 'Não foi possível salvar as instruções',
+    },
+    toasts: {
+      announcementSaved: 'Aviso salvo',
+      bannerSaved: 'Banner salvo',
+      siteNameSaved: 'Nome do site salvo',
+      logoSaved: 'Logo salvo',
+      defaultLogoRestored: 'Logo padrão restaurado',
+      instructionsSaved: 'Instruções do prompt do sistema salvas',
+    },
+    signups: {
+      title: 'Permitir novos cadastros',
+      description: 'Quando desativado, os usuários existentes ainda podem entrar, mas novas contas não podem ser criadas.',
+    },
+    siteName: {
+      title: 'Nome do site',
+      description:
+        'Exibido ao lado do logo na barra superior. Deixe vazio para usar o padrão ("{{defaultName}}"). Vale na próxima conexão de cada usuário.',
+    },
+    logo: {
+      title: 'Logo',
+      description:
+        'Exibido na interface do aplicativo, nas telas de entrada e na aba do navegador. As imagens são redimensionadas sem recorte e convertidas para PNG estático. Imagens quadradas funcionam melhor. Vale na próxima conexão de cada usuário.',
+      change: 'Alterar logo',
+      upload: 'Enviar logo',
+      restore: 'Restaurar padrão',
+    },
+    identity: {
+      title: 'Identidade ScaleOS',
+      description:
+        'O ScaleOS usa um tema claro fixo e um destaque azul fixo em todo o aplicativo.',
+      brand: 'Marca',
+      brandName: 'ScaleOS',
+      theme: 'Tema',
+      themeValue: 'Claro',
+      accent: 'Destaque',
+      accentValue: 'Azul',
+      locked: 'Gerenciado pelo ScaleOS',
+    },
+    banner: {
+      title: 'Banner',
+      description:
+        'Uma barra dispensável no topo do aplicativo, com ou sem login. Markdown é aceito, então você pode incluir links. Deixe vazio para ocultá-la. Vale na próxima conexão de cada usuário.',
+      placeholder:
+        'ex.: 🎉 Novidade: os playbooks agora aceitam importações — [saiba mais](https://example.com).',
+      tooLongBy: 'Excede o limite em {{count}} caracteres',
+      type: 'Tipo',
+      colors: {
+        neutral: 'Neutro',
+        info: 'Informação',
+        success: 'Sucesso',
+        warning: 'Aviso',
+        danger: 'Perigo',
+        brand: 'Marca',
+      },
+    },
+    topBarNotice: {
+      title: 'Aviso da barra superior',
+      description:
+        'Exibido centralizado na barra de navegação superior. Markdown é aceito, então você pode incluir links. Mantenha curto: ele aparece em uma única linha. Deixe vazio para não exibir nada. Vale na próxima conexão de cada usuário.',
+      placeholder:
+        'ex.: Atenção: manutenção programada no sábado — veja o [status](https://status.example.com).',
+    },
+    instructions: {
+      title: 'Instruções do agente',
+      description:
+        'Instruções extras adicionadas ao prompt do sistema de todos os agentes nesta implantação. Use para contexto, convenções ou regras específicas da instância.',
+      placeholder:
+        'ex.: A ACME Corp é uma empresa de logística que ajuda pequenos negócios a enviar produtos\ninternacionalmente. Nossa equipe cria ferramentas internas e painéis para acompanhar remessas.',
+    },
+    characters: '{{used}} / {{maximum}} caracteres',
+    reset: 'Redefinir',
+    save: 'Salvar',
+    gatekeepers: {
+      title: 'Guardiões',
+      description:
+        'Ative ou desative conectores e tipos de recurso para cada serviço. Guardiões provisionados automaticamente, como a Biblioteca de Contexto, têm três modos: desativado, opcional ou ativado para todos. As mudanças são graduais: não revogam o acesso que um gadget já possui.',
+      noneInstalled: 'Nenhum guardião configurável está instalado nesta implantação.',
+      autoProvisioned: 'provisionado automaticamente',
+      modes: {
+        disabled: 'Desativado',
+        optional: 'Opcional',
+        enabled: 'Ativado',
+        offForEveryone: 'Desativado para todos',
+        usersCanAdd: 'Os usuários podem adicioná-lo',
+        onForEveryone: 'Ativado automaticamente para todos',
+      },
+      off: 'Desativado',
+      disabledBadge: 'desativado',
+      hiddenResourcesOne: '{{count}} recurso oculto enquanto desativado.',
+      hiddenResourcesMany: '{{count}} recursos ocultos enquanto desativado.',
+    },
+  },
+} as const
+
+/** English administration messages. */
+export const adminEn = en
+
+/** Brazilian Portuguese administration messages. */
+export const adminPtBR = ptBR

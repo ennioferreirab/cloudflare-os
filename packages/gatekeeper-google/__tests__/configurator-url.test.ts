@@ -8,6 +8,7 @@
 // rather than as a resource the backend rejects after the user has filled the form.
 
 import { describe, expect, it, vi } from "vitest";
+import { URLPattern } from "urlpattern-polyfill";
 
 vi.mock("@gadgets/configurator-ui", () => ({
   h: (component: unknown, props: unknown, ...children: unknown[]) => ({
@@ -64,6 +65,20 @@ function valuesFromUrlPattern(resourceUrl: string, resourceUrlPattern: string) {
 const renderedCopy = (configurator: { render?: (context: never) => unknown }) =>
   JSON.stringify(configurator.render!({ values: {}, setValues() {}, ui: noUi } as never));
 describe("Gmail configurator URLs", () => {
+  it("renders the Gmail scope controls in Brazilian Portuguese", () => {
+    const rendered = JSON.stringify(gmailConfigurator.render({
+      locale: "pt-BR",
+      values: { mode: "all" },
+      setValues() {},
+      clearFields() {},
+      ui: noUi,
+    }));
+
+    expect(rendered).toContain("Escopo da caixa de entrada");
+    expect(rendered).toContain("Todo o Gmail");
+    expect(rendered).toContain("Marcador");
+  });
+
   it.for([
     ["the whole mailbox", { mode: "all" }, { kind: "gmail" }],
     ["a search", { mode: "search", query: "from:alerts@example.com" },

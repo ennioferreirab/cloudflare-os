@@ -2,6 +2,7 @@ import { Dialog } from '@cloudflare/kumo'
 import { X } from '@phosphor-icons/react'
 import type { ReactNode } from 'react'
 import { WorkshopButton, WorkshopIconButton } from './WorkshopControls'
+import { useLocale } from '../i18n'
 
 interface DeleteConfirmationDialogProps {
   open: boolean
@@ -21,11 +22,14 @@ export default function DeleteConfirmationDialog({
   title,
   description,
   isDeleting = false,
-  confirmLabel = 'Delete',
-  confirmingLabel = 'Deleting...',
+  confirmLabel,
+  confirmingLabel,
   onOpenChange,
   onConfirm,
 }: DeleteConfirmationDialogProps) {
+  const { t } = useLocale()
+  const resolvedConfirmLabel = confirmLabel ?? t('misc.deleteConfirmation.delete')
+  const resolvedConfirmingLabel = confirmingLabel ?? t('misc.deleteConfirmation.deleting')
   return (
     <Dialog.Root
       open={open}
@@ -52,7 +56,7 @@ export default function DeleteConfirmationDialog({
                 {...props}
                 className="!h-7 !w-7"
                 disabled={isDeleting}
-                aria-label="Close"
+                aria-label={t('misc.deleteConfirmation.close')}
               >
                 <X size={16} />
               </WorkshopIconButton>
@@ -68,7 +72,7 @@ export default function DeleteConfirmationDialog({
                 className="!h-9"
                 disabled={isDeleting}
               >
-                Cancel
+                {t('misc.deleteConfirmation.cancel')}
               </WorkshopButton>
             )}
           />
@@ -78,7 +82,7 @@ export default function DeleteConfirmationDialog({
             disabled={isDeleting}
             className="!h-9 min-w-[64px]"
           >
-            {isDeleting ? confirmingLabel : confirmLabel}
+            {isDeleting ? resolvedConfirmingLabel : resolvedConfirmLabel}
           </WorkshopButton>
         </div>
       </Dialog>

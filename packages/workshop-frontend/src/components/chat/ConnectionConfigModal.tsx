@@ -4,6 +4,7 @@ import { X } from '@phosphor-icons/react'
 import type { Connection, ConnectionResource } from '../../data/sample'
 import { logoComponents } from '../ConnectionLogos'
 import { isImeComposing } from '../../keyboardEvent'
+import { useLocale } from '../../i18n'
 
 export default function ConnectionConfigModal({
   connection,
@@ -16,6 +17,7 @@ export default function ConnectionConfigModal({
   onOpenChange: (open: boolean) => void
   onSave?: (resources: ConnectionResource[]) => void
 }) {
+  const { t } = useLocale()
   const [resources, setResources] = useState<ConnectionResource[]>(
     connection.resources ?? []
   )
@@ -61,6 +63,7 @@ export default function ConnectionConfigModal({
             render={(props) => (
               <button
                 {...props}
+                aria-label={t('misc.connection.close')}
                 className="p-1 text-kumo-subtle hover:text-kumo-default rounded-md hover:bg-kumo-tint transition-colors"
               >
                 <X size={14} />
@@ -94,7 +97,7 @@ export default function ConnectionConfigModal({
                 onClick={handleAdd}
                 disabled={!inputValue.trim()}
               >
-                Add
+                {t('misc.connection.add')}
               </Button>
             </div>
           </div>
@@ -104,7 +107,7 @@ export default function ConnectionConfigModal({
         <div className="max-h-56 overflow-y-auto px-5 pb-4">
           {resources.length === 0 ? (
             <p className="text-sm text-kumo-inactive text-center py-4">
-              No resources added yet
+              {t('misc.connection.noResources')}
             </p>
           ) : (
             <div className="space-y-1">
@@ -133,7 +136,7 @@ export default function ConnectionConfigModal({
           <Dialog.Close
             render={(props) => (
               <Button {...props} variant="outline" size="sm">
-                Cancel
+                {t('misc.connection.cancel')}
               </Button>
             )}
           />
@@ -145,7 +148,7 @@ export default function ConnectionConfigModal({
               onOpenChange(false)
             }}
           >
-            Save
+            {t('misc.connection.save')}
           </Button>
         </div>
       </Dialog>

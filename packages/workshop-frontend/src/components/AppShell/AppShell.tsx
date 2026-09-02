@@ -7,6 +7,7 @@ import { useConnectionLost } from '../../RpcContext'
 import Sidebar from './Sidebar'
 import CommandPalette from './CommandPalette'
 import { OPEN_COMMAND_PALETTE_EVENT } from './commandPaletteBus'
+import { useLocale } from '../../i18n'
 
 const STORAGE_KEY_COLLAPSED = 'gadgets:sidebar-collapsed'
 
@@ -29,6 +30,7 @@ function readCollapsed(): boolean {
  * is simpler and matches how the rest of the app handles small screens.
  */
 export default function AppShell({ children }: { children: React.ReactNode }) {
+  const { t } = useLocale()
   const [collapsed, setCollapsed] = useState<boolean>(readCollapsed)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -125,7 +127,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             ref={drawerRef}
             role="dialog"
             aria-modal="true"
-            aria-label="Primary navigation"
+            aria-label={t('navigation.primary')}
             tabIndex={-1}
             className="fixed inset-y-0 left-0 z-50 outline-none md:hidden"
           >
@@ -148,12 +150,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             type="button"
             ref={menuButtonRef}
             onClick={() => setMobileOpen((o) => !o)}
-            aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+            aria-label={mobileOpen ? t('appShell.closeMenu') : t('appShell.openMenu')}
             className="flex h-11 w-11 items-center justify-center rounded-md text-kumo-default transition-colors hover:bg-kumo-tint md:hidden"
           >
             {mobileOpen ? <X size={16} /> : <List size={16} />}
           </button>
-          <TopBarNotice />
+          {pathname !== '/' && <TopBarNotice />}
           {/* `ml-auto` rather than the container's `justify-between`: on desktop the hamburger is
               hidden, leaving this the only in-flow child, which `justify-between` would park on the
               left. */}

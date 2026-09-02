@@ -11,6 +11,7 @@ import {
   PICKER_CAPTION, PICKER_EMPTY, PICKER_ROW, PICKER_ROW_ACTIVE, TabHint,
 } from './components/pickerRows'
 import { AccountsSubscriberAdapter } from './accountsSubscriber'
+import { useLocale } from './i18n'
 
 export interface VendorOption {
   id: string
@@ -96,6 +97,7 @@ export default function ResourcePicker({
   authenticatedApi, searchText, onSelectAccount, onRefine, onReadyChange, compact,
   maxHeight: maxHeightOverride, style, activeIndex, onItems, activateRef,
 }: ResourcePickerProps) {
+  const { t } = useLocale()
   const toasts = useKumoToastManager()
 
   const buildRefineUrl = useCallback((suffix: string, replaceSearch?: boolean) => {
@@ -153,7 +155,7 @@ export default function ResourcePicker({
       cancelled = true
       subscription[Symbol.dispose]()
     }
-  }, [authenticatedApi])
+  }, [authenticatedApi, t])
 
   // Load all vendors on mount.
   useEffect(() => {
@@ -164,7 +166,7 @@ export default function ResourcePicker({
         const unavailable = vendorList.filter(v => v.unavailable)
         if (unavailable.length > 0) {
           toasts.add({
-            title: `Some services are temporarily unavailable: ${unavailable.map(v => v.id).join(', ')}`,
+            title: t('connections.gatekeepers.unavailable', { services: unavailable.map(v => v.id).join(', ') }),
             variant: 'warning',
           })
         }
@@ -175,13 +177,13 @@ export default function ResourcePicker({
         })))
       } catch (error) {
         console.error('Failed to load vendors:', error)
-        toasts.add({ title: 'Failed to load available services', variant: 'error' })
+        toasts.add({ title: t('connections.modal.loadServicesFailed'), variant: 'error' })
       } finally {
         setVendorsLoading(false)
       }
     }
     loadVendors()
-  }, [authenticatedApi])
+  }, [authenticatedApi, t])
 
   // --- Filtering and classification logic ---
 
@@ -274,7 +276,7 @@ export default function ResourcePicker({
       ? httpAccounts.some(([_, { description }]) => {
           const corpus = [description.displayName, description.uniqueName]
             .filter(Boolean).join(' ').toLowerCase()
-          return lowerSearch.split(/\s+/).every(t => corpus.includes(t))
+          return lowerSearch.split(/\s+/).every(term => corpus.includes(term))
         })
       : httpAccounts.length > 0
 
@@ -308,7 +310,7 @@ export default function ResourcePicker({
         vendorAccounts = vendorAccounts.filter(account => {
           const corpus = [account.description.displayName, account.description.uniqueName]
             .filter(Boolean).join(' ').toLowerCase()
-          return lowerSearch.split(/\s+/).every(t => corpus.includes(t))
+          return lowerSearch.split(/\s+/).every(term => corpus.includes(term))
         })
       }
       if (accountsOnly && vendorAccounts.length === 0) continue
@@ -402,7 +404,7 @@ export default function ResourcePicker({
       window.open(result.url, '_blank', 'noopener,noreferrer')
     } catch (error) {
       console.error('Failed to initiate connection:', error)
-      toasts.add({ title: 'Failed to start connection flow', variant: 'error' })
+      toasts.add({ title: t('connections.picker.connectionStartFailed'), variant: 'error' })
     } finally {
       setConnectingVendor(null)
     }
@@ -417,15 +419,15 @@ export default function ResourcePicker({
       const result = await authenticatedApi.ensureAccountResources(accountId, resourceUrlPatterns)
       if (result.url) {
         window.open(result.url, '_blank', 'noopener,noreferrer')
-        toasts.add({ title: 'Grant the additional access in the new tab.', variant: 'success' })
+        toasts.add({ title: t('connections.picker.grantStarted'), variant: 'success' })
       }
     } catch (error) {
       console.error('Failed to request additional access:', error)
-      toasts.add({ title: 'Failed to request additional access', variant: 'error' })
+      toasts.add({ title: t('connections.picker.grantFailed'), variant: 'error' })
     } finally {
       setGrantingAccount(current => current === accountId ? null : current)
     }
-  }, [authenticatedApi, toasts])
+  }, [authenticatedApi, t, toasts])
 
   // --- Reconnect expired account handler ---
 
@@ -438,10 +440,10 @@ export default function ResourcePicker({
       // The reconnectingAccount state is cleared at that point.
     } catch (error) {
       console.error('Failed to initiate reconnection:', error)
-      toasts.add({ title: 'Failed to start re-authentication flow', variant: 'error' })
+      toasts.add({ title: t('connections.picker.reauthenticationFailed'), variant: 'error' })
       setReconnectingAccount(null)
     }
-  }, [authenticatedApi])
+  }, [authenticatedApi, t])
 
   // --- Render ---
 
@@ -455,9 +457,9 @@ export default function ResourcePicker({
     <div style={style}>
       <div className="overflow-y-auto" style={{ maxHeight }}>
         {!ready ? (
-          <p className={PICKER_EMPTY}>Loading connections…</p>
+          <p className={PICKER_EMPTY}>{t('connections.picker.loading')}</p>
         ) : matchedResources.length === 0 ? (
-          <p className={PICKER_EMPTY}>No matching resources.</p>
+          <p className={PICKER_EMPTY}>{t('connections.picker.noMatchingResources')}</p>
         ) : (() => {
           let itemIdx = 0
           return matchedResources.map(({ resource, vendor, classification, suffix, replaceSearch, accountsOnly }, i) => {
@@ -511,7 +513,7 @@ export default function ResourcePicker({
               vendorAccounts = vendorAccounts.filter(account => {
                 const corpus = [account.description.displayName, account.description.uniqueName]
                   .filter(Boolean).join(' ').toLowerCase()
-                return lowerSearch.split(/\s+/).every(t => corpus.includes(t))
+                return lowerSearch.split(/\s+/).every(term => corpus.includes(term))
               })
             }
 
@@ -578,12 +580,12 @@ export default function ResourcePicker({
                       ) : isExpired ? (
                         <span className="flex flex-shrink-0 items-center gap-1">
                           <Warning size={12} className="text-kumo-warning" />
-                          <span className="text-[11.5px] leading-4 text-kumo-warning">Expired — click to re-authenticate</span>
+                          <span className="text-[11.5px] leading-4 text-kumo-warning">{t('connections.picker.expiredReauthenticate')}</span>
                         </span>
                       ) : needsAccess ? (
                         <span className="flex flex-shrink-0 items-center gap-1">
                           <Warning size={12} className="text-kumo-warning" />
-                          <span className="text-[11.5px] leading-4 text-kumo-warning">Grant access</span>
+                          <span className="text-[11.5px] leading-4 text-kumo-warning">{t('connections.picker.grantAccess')}</span>
                         </span>
                       ) : isActive && !searchHasPlaceholders ? (
                         <TabHint />
@@ -595,7 +597,7 @@ export default function ResourcePicker({
 
                   if (searchHasPlaceholders) {
                     return (
-                      <Tooltip key={account.id} content="Replace all placeholders in the URL before selecting an account" asChild>
+                      <Tooltip key={account.id} content={t('connections.picker.replacePlaceholders')} asChild>
                         {accountRow}
                       </Tooltip>
                     )
@@ -624,7 +626,7 @@ export default function ResourcePicker({
                       )}
                     </span>
                     <span className="flex-1 text-[13px] leading-[18px] tracking-[-0.25px] text-kumo-subtle">
-                      {connectingVendor === vendor.id ? 'Opening…' : 'Connect new account'}
+                      {connectingVendor === vendor.id ? t('connections.picker.opening') : t('connections.picker.connectNewAccount')}
                     </span>
                     {isActive && <TabHint />}
                   </div>

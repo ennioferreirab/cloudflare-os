@@ -12,7 +12,10 @@ import {
   exactSlashCommandMatches, filterSlashCommandCatalog, parseSlashCommandInput,
   slashCommandTokenKey, type ParsedSlashCommandInput,
 } from "./slash-command-input";
-import { loadSlashCommandCatalog, slashCommandKey } from "./slash-command-catalog";
+import {
+  isBuiltInCompactCommand, loadSlashCommandCatalog, slashCommandKey,
+} from "./slash-command-catalog";
+import { useLocale } from "../../i18n";
 
 type SlashCommandPopupLayout = {
   left: number;
@@ -71,6 +74,7 @@ export function useSlashCommandPicker({
    */
   chatExists: boolean;
 }) {
+  const { t } = useLocale();
   const [choices, setChoices] = useState<SlashCommandChoice[]>([]);
   const [choicesQuery, setChoicesQuery] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -219,6 +223,11 @@ export function useSlashCommandPicker({
     return () => document.removeEventListener("pointerdown", onPointerDown, true);
   }, [activeToken, anchorRef, open]);
 
+  const displayDescription = (choice: SlashCommandChoice) =>
+    isBuiltInCompactCommand(choice)
+      ? t('workspace.chat.compactDescription')
+      : choice.description;
+
   let popup = open && layout ? createPortal(
     <div
       ref={popupRef}
@@ -231,17 +240,17 @@ export function useSlashCommandPicker({
         maxHeight: layout.maxHeight,
       }}
     >
-      <p className={`m-0 shrink-0 px-3.5 pb-1 pt-2.5 ${PICKER_CAPTION}`}>Commands</p>
+      <p className={`m-0 shrink-0 px-3.5 pb-1 pt-2.5 ${PICKER_CAPTION}`}>{t('workspace.chat.slashCommands')}</p>
       <div
         ref={listRef}
         id={listboxId}
         role="listbox"
-        aria-label="Slash commands"
+        aria-label={t('workspace.chat.slashCommandsAria')}
         aria-busy={loading}
         className="sidebar-scroll min-h-0 flex-1 overflow-y-auto"
       >
         {loading && choices.length === 0 ? (
-          <p className={PICKER_EMPTY}>Loading commands…</p>
+          <p className={PICKER_EMPTY}>{t('workspace.chat.slashCommandsLoading')}</p>
         ) : choices.length > 0 ? (
           choices.map((choice, optionIndex) => (
             <button
@@ -254,7 +263,7 @@ export function useSlashCommandPicker({
               disabled={!selectable}
               title={[
                 `/${choice.name}`,
-                choice.description,
+                displayDescription(choice),
                 [choice.providerLabel, choice.resourceLabel].filter(Boolean).join(" · "),
               ].join("\n")}
               className={`${PICKER_ROW} w-full text-left text-[13px] leading-[18px] tracking-[-0.25px] disabled:cursor-wait disabled:opacity-60 ${optionIndex === index ? `${PICKER_ROW_ACTIVE} text-kumo-strong` : "text-kumo-default"}`}
@@ -264,7 +273,9 @@ export function useSlashCommandPicker({
               <span className="max-w-[45%] shrink-0 truncate">
                 <span className="text-kumo-inactive">/</span>{choice.name}
               </span>
-              <span className="min-w-0 flex-1 truncate text-kumo-subtle">{choice.description}</span>
+              <span className="min-w-0 flex-1 truncate text-kumo-subtle">
+                {displayDescription(choice)}
+              </span>
               <span className="max-w-[30%] shrink-0 truncate text-[11.5px] leading-4 text-kumo-inactive">
                 {choice.providerLabel}
               </span>
@@ -274,10 +285,10 @@ export function useSlashCommandPicker({
         ) : (
           <p className={PICKER_EMPTY}>
             {error
-              ? `Couldn’t load commands. ${error}`
+              ? t('workspace.chat.slashPickerLoadFailed')
               : query
-                ? "No commands match your search."
-                : "No commands are available."}
+                ? t('workspace.chat.slashNoMatches')
+                : t('workspace.chat.slashNoneAvailable')}
           </p>
         )}
       </div>
@@ -301,10 +312,12 @@ export function useSlashCommandPicker({
     setIndex: selectIndex,
     status: open
       ? loading
-        ? "Loading slash commands"
+        ? t('workspace.chat.slashStatusLoading')
         : error
-          ? `Slash commands unavailable: ${error}`
-          : `${choices.length} slash command${choices.length === 1 ? "" : "s"} found`
+          ? t('workspace.chat.slashStatusUnavailable')
+          : choices.length === 1
+            ? t('workspace.chat.slashStatusOne')
+            : t('workspace.chat.slashStatusMany', { count: choices.length })
       : "",
   };
 }

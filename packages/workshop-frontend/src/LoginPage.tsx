@@ -10,6 +10,8 @@ import { useDocumentTitle } from './useDocumentTitle'
 import { useConnectionLost } from './RpcContext'
 import OAuthButtons from './components/auth/OAuthButtons'
 import SiteLogo from './components/SiteLogo'
+import LanguageSelector from './components/LanguageSelector'
+import { useLocale } from './i18n'
 
 
 interface LoginPageProps {
@@ -17,16 +19,25 @@ interface LoginPageProps {
   onLoginSuccess?: () => void
 }
 
+type LoginError =
+  | { key: 'auth.signIn.invalidCredentials' | 'auth.signIn.failed' }
+  | { message: string }
+
 export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<LoginError | null>(null)
   const serverConfig = useServerConfig()
   const serverConfigError = useServerConfigError()
   const siteName = useSiteName()
   const connectionLost = useConnectionLost()
-  useDocumentTitle('Sign in')
+  const { t } = useLocale()
+  useDocumentTitle(t('auth.signIn.title'))
+
+  const errorMessage = error
+    ? 'key' in error ? t(error.key) : error.message
+    : null
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -45,10 +56,10 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
           window.location.reload()
         }
       } else {
-        setError('Invalid username or password')
+        setError({ key: 'auth.signIn.invalidCredentials' })
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
+      setError(err instanceof Error ? { message: err.message } : { key: 'auth.signIn.failed' })
     } finally {
       setLoading(false)
     }
@@ -63,20 +74,22 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
       return (
         <div
           role="alert"
-          className="flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8"
+          className="relative flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8"
         >
+          <LanguageSelector className="absolute right-4 top-4 w-[170px]" />
           <p className="text-sm text-kumo-danger text-center">
-            Couldn&apos;t load deployment settings.
+            {t('auth.deploymentSettingsFailed')}
           </p>
-          <Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>
+          <Button variant="secondary" onClick={() => window.location.reload()}>{t('common.reload')}</Button>
         </div>
       )
     }
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8">
+      <div className="relative flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8">
+        <LanguageSelector className="absolute right-4 top-4 w-[170px]" />
         <Loader size="lg" />
         <p className="text-sm text-kumo-subtle text-center">
-          {connectionLost ? "Can't reach the server. Retrying…" : 'Loading…'}
+          {connectionLost ? t('auth.serverUnavailable') : t('common.loading')}
         </p>
       </div>
     )
@@ -87,6 +100,7 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col items-center justify-start overflow-y-auto bg-kumo-base px-4 py-8">
+      <LanguageSelector className="absolute right-4 top-4 z-10 w-[170px]" />
       {/* Dot grid — fades from top to bottom */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -107,7 +121,7 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
             </div>
           </SiteLogo>
           <h1 className="text-xl font-semibold text-kumo-default">{siteName}</h1>
-          <p className="text-sm text-kumo-subtle mt-1">Sign in to your account</p>
+          <p className="text-sm text-kumo-subtle mt-1">{t('auth.signIn.subtitle')}</p>
         </div>
 
         {passwordAuthEnabled && (
@@ -116,19 +130,19 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 className="w-full"
-                label="Username"
+                label={t('auth.username')}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoFocus
                 autoComplete="username"
                 disabled={loading}
-                placeholder="your-username"
+                placeholder={t('auth.usernamePlaceholder')}
               />
 
               <Input
                 className="w-full"
                 type="password"
-                label="Password"
+                label={t('auth.password')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
@@ -136,8 +150,8 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
                 placeholder="••••••••"
               />
 
-              {error && (
-                <Banner variant="error" title={error} />
+              {errorMessage && (
+                <Banner variant="error" title={errorMessage} />
               )}
 
               <Button
@@ -147,14 +161,14 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
                 loading={loading}
                 className="w-full justify-center"
               >
-                Sign in
+                {t('auth.signIn.submit')}
               </Button>
             </form>
 
             <p className="text-center text-sm text-kumo-subtle mt-6">
-              Don't have an account?{' '}
+              {t('auth.signIn.noAccount')}{' '}
               <Link to="/signup" className="text-kumo-brand hover:underline font-medium">
-                Create one
+                {t('auth.signIn.createAccount')}
               </Link>
             </p>
           </>
@@ -166,12 +180,12 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
             {passwordAuthEnabled && (
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-px flex-1 bg-kumo-line" />
-                <span className="text-xs text-kumo-subtle">or</span>
+                <span className="text-xs text-kumo-subtle">{t('common.or')}</span>
                 <div className="h-px flex-1 bg-kumo-line" />
               </div>
             )}
-            {!passwordAuthEnabled && error && (
-              <Banner variant="error" title={error} className="mb-4" />
+            {!passwordAuthEnabled && errorMessage && (
+              <Banner variant="error" title={errorMessage} className="mb-4" />
             )}
             <OAuthButtons rpcStub={rpcStub} vendors={authVendors} onSuccess={onLoginSuccess} />
           </div>

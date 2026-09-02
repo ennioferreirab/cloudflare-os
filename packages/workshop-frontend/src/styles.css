@@ -3,11 +3,57 @@
 @import "tailwindcss";
 @custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
+/* ScaleOS typography: human-facing UI uses Instrument Sans, large numerals use Space Grotesk,
+   and machine-like evidence uses IBM Plex Mono. The files are copied byte-for-byte from the
+   canonical design-system distribution under public/assets/scaleos/. */
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/assets/scaleos/fonts/instrument-sans-variable.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400 700;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/assets/scaleos/fonts/space-grotesk-latin-var.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400 700;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/assets/scaleos/fonts/ibm-plex-mono-400.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/assets/scaleos/fonts/ibm-plex-mono-500.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/assets/scaleos/fonts/ibm-plex-mono-600.woff2") format("woff2");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 600;
+}
+
 @theme {
   /* ===== FONTS ===== */
-  --font-sans: "FT Kunst Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+  --font-sans: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
     "Roboto", "Helvetica Neue", sans-serif;
-  --font-mono: "Apercu Mono Pro", "SF Mono", Menlo, Monaco, Consolas, monospace;
+  --font-display: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Roboto", "Helvetica Neue", sans-serif;
+  --font-numeral: "Space Grotesk", "Instrument Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Monaco, Consolas, monospace;
 
   /* ===== TEXT SIZES (restore Tailwind defaults, overriding Kumo's 12/13/14/16px) ===== */
   --text-xs: 0.75rem;
@@ -19,92 +65,109 @@
   --text-lg: 1.125rem;
   --text-lg--line-height: 1.75rem;
 
-  /* ===== KUMO SEMANTIC COLOR OVERRIDES =====
-     Near-neutral, barely-warm greys for every surface, border, and neutral text. The brand orange
-     is reserved for *intent only* (active item, links, primary action, focus) so it actually pops.
-     This is the single biggest lever between a "consumer/playground" feel and an enterprise one. */
+  /* ===== SCALEOS SEMANTIC COLOR TOKENS =====
+     ScaleOS keeps the page blue-tinted and calm; signal blue is reserved for interaction and
+     active evidence. Kumo remains the runtime vocabulary, with its tokens mapped to these roles. */
 
-  /* Background tokens — near-white neutrals with a faint warm undertone */
-  --color-kumo-base: #fcfcfb;
-  --color-kumo-elevated: #f8f8f7;
-  --color-kumo-tint: #f3f3f1;
-  --color-kumo-overlay: #fbfbfa;
-  --color-kumo-recessed: #efeeec;
-  --color-kumo-control: #ffffff;
-  --color-kumo-contrast: #14110f;
-  --color-kumo-fill: #e8e7e4;
-  --color-kumo-fill-hover: #dededb;
-  --color-kumo-interact: #cac8c3;
+  /* Page and surfaces */
+  --color-kumo-base: #F7F9FF;
+  --color-kumo-elevated: #FFFFFF;
+  --color-kumo-tint: #F4F7FC;
+  --color-kumo-overlay: #FFFFFF;
+  --color-kumo-recessed: #EEF2FB;
+  --color-kumo-control: #FFFFFF;
+  --color-kumo-contrast: #0C1633;
+  --color-kumo-fill: #EEF2FB;
+  --color-kumo-fill-hover: #DBE5FF;
+  --color-kumo-interact: #4F7BFF;
 
-  /* Brand — warm orange accent (intent only) */
-  --color-kumo-brand: #ff4801;
-  --color-kumo-brand-hover: #e03f00;
+  /* Signal and hairline */
+  --color-kumo-brand: #2351FF;
+  --color-kumo-brand-hover: #4F7BFF;
+  --color-kumo-line: #E3E9F3;
+  --color-kumo-ring: #4F7BFF;
 
-  /* Border / line tokens — neutral hairlines */
-  --color-kumo-line: #1411100f;
-  --color-kumo-ring: #cac8c3;
+  /* Chat surface */
+  --color-kumo-bubble-user: #DBE5FF;
 
-  /* Chat surface tokens */
-  --color-kumo-bubble-user: #f1f0ee;
-
-  /* Status tints — keep functional colors, warm the tints */
-  --color-kumo-info: oklch(62.3% 0.214 259.815);
-  --color-kumo-info-tint: oklch(90% 0.06 250);
-  --color-kumo-warning: oklch(79.5% 0.184 86.047);
-  --color-kumo-warning-tint: oklch(92% 0.08 85);
-  --color-kumo-danger: oklch(63.7% 0.237 25.331);
-  --color-kumo-danger-tint: oklch(92% 0.06 25);
-  --color-kumo-success: oklch(72.3% 0.219 149.579);
-  --color-kumo-success-tint: oklch(92% 0.08 150);
+  /* Canonical operational states: blue in progress, green confirmed, amber attention, red rupture. */
+  --color-kumo-info: #2351FF;
+  --color-kumo-info-tint: #DBE5FF;
+  --color-kumo-warning: #F59E0B;
+  --color-kumo-warning-tint: #FEF3C7;
+  --color-kumo-danger: #D04545;
+  --color-kumo-danger-tint: #FDE8E8;
+  --color-kumo-success: #16A34A;
+  --color-kumo-success-tint: #DCFCE7;
 
   /* Tooltip */
-  --color-kumo-tip-shadow: #14111014;
+  --color-kumo-tip-shadow: #0C163314;
   --color-kumo-arrow-edge: var(--color-kumo-line);
   --color-kumo-arrow-stroke: transparent;
 
-  /* Text color tokens — near-neutral greys (faint warm undertone, no brown) */
-  --text-color-kumo-default: #1c1a18;
-  --text-color-kumo-default-hover: #100f0d;
-  --text-color-kumo-inverse: #ffffff;
-  --text-color-kumo-strong: #100f0d;
-  --text-color-kumo-subtle: oklch(52% 0.006 60);
-  --text-color-kumo-inactive: oklch(66% 0.005 60);
-  --text-color-kumo-brand: #ff4801;
-  --text-color-kumo-link: #ff4801;
-  --text-color-kumo-success: oklch(72.3% 0.219 149.579);
-  --text-color-kumo-danger: oklch(63.7% 0.237 25.331);
-  --text-color-kumo-warning: oklch(47.6% 0.114 61.907);
+  /* Text roles */
+  --text-color-kumo-default: #0C1633;
+  --text-color-kumo-default-hover: #0C1633;
+  --text-color-kumo-inverse: #FFFFFF;
+  --text-color-kumo-strong: #0C1633;
+  --text-color-kumo-subtle: #455173;
+  --text-color-kumo-inactive: #5B6880;
+  --text-color-kumo-brand: #2351FF;
+  --text-color-kumo-link: #2351FF;
+  --text-color-kumo-success: #166534;
+  --text-color-kumo-danger: #D04545;
+  --text-color-kumo-warning: #92400E;
 
-  /* ===== CUSTOM BRAND TOKENS (for direct use alongside Kumo tokens) ===== */
-  --color-accent-100: #ff4801;
-  --color-accent-200: #ff7038;
-  --color-background-100: #fcfcfb;
-  --color-background-200: #f8f8f7;
-  --color-background-300: #f3f3f1;
-  --color-foreground-100: #100f0d;
-  --color-foreground-200: #100f0d;
-  --color-foreground-300: #1c1a18;
-  --color-border-100: #e8e7e4;
-  --color-border-100-50: #e8e7e480;
-  --color-selection-bg: #ffe9e0;
-  --color-selection-text: #ff500a;
-  --color-shadow-accent-light: #ffa683;
-  --color-shadow-accent-dark: #b13200;
+  /* ===== SCALEOS ALIASES FOR DIRECT CONSUMER USE ===== */
+  --color-scaleos-page: #F7F9FF;
+  --color-scaleos-surface: #FFFFFF;
+  --color-scaleos-panel: #EEF2FB;
+  --color-scaleos-panel-soft: #F4F7FC;
+  --color-scaleos-ink: #0C1633;
+  --color-scaleos-slate: #455173;
+  --color-scaleos-mist: #5B6880;
+  --color-scaleos-hairline: #E3E9F3;
+  --color-scaleos-signal: #2351FF;
+  --color-scaleos-signal-hover: #4F7BFF;
+  --color-scaleos-signal-soft: #DBE5FF;
+  --color-scaleos-halo: #C4D4FF;
+  --color-scaleos-halo-soft: #E3EDFF;
+  --color-scaleos-ok: #16A34A;
+  --color-scaleos-ok-deep: #166534;
+  --color-scaleos-ok-soft: #DCFCE7;
+  --color-scaleos-warn: #F59E0B;
+  --color-scaleos-warn-deep: #92400E;
+  --color-scaleos-warn-soft: #FEF3C7;
+  --color-scaleos-alert: #D04545;
 
-  /* Category colors */
-  --color-compute-100: #0a95ff;
-  --color-compute-200: #0a95ff1a;
-  --color-storage-100: #ee0ddb;
-  --color-storage-200: #ee0ddb1a;
-  --color-ai-100: #19e306;
-  --color-ai-200: #f2f5e1;
-  --color-media-100: #9616ff;
-  --color-media-200: #f8ebee;
+  /* Existing application aliases now resolve to ScaleOS roles. */
+  --color-accent-100: #2351FF;
+  --color-accent-200: #4F7BFF;
+  --color-background-100: #F7F9FF;
+  --color-background-200: #FFFFFF;
+  --color-background-300: #F4F7FC;
+  --color-foreground-100: #0C1633;
+  --color-foreground-200: #0C1633;
+  --color-foreground-300: #455173;
+  --color-border-100: #E3E9F3;
+  --color-border-100-50: #E3E9F380;
+  --color-selection-bg: #DBE5FF;
+  --color-selection-text: #2351FF;
+  --color-shadow-accent-light: #C4D4FF;
+  --color-shadow-accent-dark: #2351FF;
 
-  /* Status colors */
-  --color-status-live: oklch(72.3% 0.219 149.579);
-  --color-status-draft: oklch(68.1% 0.162 75.834);
-  --color-status-building: oklch(62.3% 0.214 259.815);
+  /* Category and lifecycle colors stay inside the operational evidence grammar. */
+  --color-compute-100: #2351FF;
+  --color-compute-200: #DBE5FF;
+  --color-storage-100: #4F7BFF;
+  --color-storage-200: #E3EDFF;
+  --color-ai-100: #16A34A;
+  --color-ai-200: #DCFCE7;
+  --color-media-100: #F59E0B;
+  --color-media-200: #FEF3C7;
+  --color-status-live: #16A34A;
+  --color-status-draft: #F59E0B;
+  --color-status-building: #2351FF;
 
   /* Spacing / layout */
   --spacing: 0.25rem;
@@ -115,11 +178,11 @@
   --container-4xl: 56rem;
 
   /* Radius */
-  --radius-sm: 0.25rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.75rem;
+  --radius-2xl: 1.75rem;
 
   /* Transitions.
      Default CSS curves are too weak to feel intentional; keep them for legacy callers but add
@@ -136,9 +199,9 @@
   --default-transition-duration: 0.15s;
   --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Shadows */
-  --shadow-stack: 1px 6px 6px 0 #fff3 inset, 0 0 0px 0 #ffffff59 inset,
-    0 4px 12px 0 #00000005, 0 0 0px 0 #00000005, 0 2px 12px 0 #00000008;
+  /* ScaleOS elevation: flat at rest, tinted lift for interaction and prominence. */
+  --shadow-stack: 0 1px 2px rgba(12, 22, 51, 0.06),
+    0 2px 8px rgba(12, 22, 51, 0.04);
 }
 
 [data-mode="dark"] {
@@ -305,6 +368,12 @@ code {
   font-family: var(--font-mono);
 }
 
+/* Operational numerals use the dedicated display family while retaining aligned columns. */
+.tabular-nums {
+  font-family: var(--font-numeral);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Prompt input focus */
 .prompt-input {
   border-color: var(--color-kumo-line);
@@ -326,7 +395,8 @@ code {
 
 .template-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 20px rgba(35, 81, 255, 0.1),
+    0 2px 6px rgba(12, 22, 51, 0.06);
 }
 
 /* Smooth scrolling */
@@ -373,53 +443,58 @@ html {
 .themed-prompt-card-shadow {
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--color-kumo-fill) 75%, transparent),
-    0 1px 2px rgba(20, 17, 16, 0.03),
-    0 10px 28px -16px rgba(20, 17, 16, 0.12);
+    0 1px 2px rgba(12, 22, 51, 0.06),
+    0 2px 8px rgba(12, 22, 51, 0.04);
 }
 
 .themed-prompt-card-shadow:focus-within {
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--color-kumo-fill) 85%, transparent),
-    0 1px 2px rgba(20, 17, 16, 0.04),
-    0 14px 34px -14px rgba(20, 17, 16, 0.16);
+    0 6px 20px rgba(35, 81, 255, 0.1),
+    0 2px 6px rgba(12, 22, 51, 0.06);
 }
 
 .themed-user-bubble-shadow {
   box-shadow:
-    0 1px 1px rgba(82, 16, 0, 0.03),
+    0 1px 2px rgba(12, 22, 51, 0.06),
     inset 0 1px 0 color-mix(in srgb, var(--color-kumo-fill) 65%, transparent);
 }
 
 .themed-thumbnail-shadow {
-  box-shadow: 0 2px 14px rgba(20, 17, 16, 0.1);
+  box-shadow: 0 2px 8px rgba(12, 22, 51, 0.06);
 }
 
 .themed-floating-shadow {
-  box-shadow: 0 8px 20px rgba(82, 16, 0, 0.1);
+  box-shadow: 0 6px 20px rgba(35, 81, 255, 0.1),
+    0 2px 6px rgba(12, 22, 51, 0.06);
 }
 
 .themed-floating-shadow-lg {
-  box-shadow: 0 14px 36px rgba(82, 16, 0, 0.1);
+  box-shadow: 0 24px 60px rgba(12, 22, 51, 0.14);
 }
 
 .themed-bottom-shadow {
-  box-shadow: 0 4px 10px -8px rgba(82, 16, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(12, 22, 51, 0.06);
 }
 
 .themed-compact-shadow {
-  box-shadow: 0 8px 24px -20px rgba(82, 16, 0, 0.28);
+  box-shadow: 0 1px 2px rgba(12, 22, 51, 0.06),
+    0 2px 8px rgba(12, 22, 51, 0.04);
 }
 
 .themed-compact-shadow:focus-within {
-  box-shadow: 0 10px 28px -20px rgba(82, 16, 0, 0.34);
+  box-shadow: 0 6px 20px rgba(35, 81, 255, 0.1),
+    0 2px 6px rgba(12, 22, 51, 0.06);
 }
 
 .themed-card-hover-shadow:hover {
-  box-shadow: 0 8px 20px -16px rgba(82, 16, 0, 0.12);
+  box-shadow: 0 6px 20px rgba(35, 81, 255, 0.1),
+    0 2px 6px rgba(12, 22, 51, 0.06);
 }
 
 .themed-row-hover-shadow:hover {
-  box-shadow: 0 8px 20px -18px rgba(82, 16, 0, 0.28);
+  box-shadow: 0 1px 2px rgba(12, 22, 51, 0.06),
+    0 2px 8px rgba(12, 22, 51, 0.04);
 }
 
 .themed-accent-glow {

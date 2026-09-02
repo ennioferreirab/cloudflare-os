@@ -4,6 +4,7 @@ import { RpcStub } from 'capnweb'
 import { AuthenticatedApi, GatekeeperVendorFilter } from '@gadgets/workshop-shared/api'
 import { VendorDescription } from '@gadgets/workshop-shared/gatekeeper'
 import VendorCard from './VendorCard'
+import { useLocale } from './i18n'
 
 interface ConnectAccountModalProps {
   visible: boolean
@@ -26,6 +27,7 @@ export default function ConnectAccountModal({
   authenticatedApi,
   filter,
 }: ConnectAccountModalProps) {
+  const { t } = useLocale()
   const toasts = useKumoToastManager()
   const [connecting, setConnecting] = useState<string | null>(null)
   const [vendors, setVendors] = useState<VendorOption[]>([])
@@ -45,21 +47,21 @@ export default function ConnectAccountModal({
         const unavailable = vendorList.filter(v => v.unavailable)
         if (unavailable.length > 0) {
           toasts.add({
-            title: `Some services are temporarily unavailable: ${unavailable.map(v => v.id).join(', ')}`,
+            title: t('connections.gatekeepers.unavailable', { services: unavailable.map(v => v.id).join(', ') }),
             variant: 'warning',
           })
         }
         setVendors(vendorList.filter(v => !v.unavailable).map(v => ({ id: v.id, description: v.description })))
       } catch (error) {
         console.error('Failed to fetch vendors:', error)
-        toasts.add({ title: 'Failed to load available services', variant: 'error' })
+        toasts.add({ title: t('connections.modal.loadServicesFailed'), variant: 'error' })
       } finally {
         setVendorsLoading(false)
       }
     }
 
     fetchVendors()
-  }, [visible, authenticatedApi, filter])
+  }, [visible, authenticatedApi, filter, t])
 
   const handleConnect = async (vendorId: string) => {
     setConnecting(vendorId)
@@ -69,7 +71,7 @@ export default function ConnectAccountModal({
       onInitiated()
     } catch (error) {
       console.error('Failed to initiate connection:', error)
-      toasts.add({ title: 'Failed to start connection flow', variant: 'error' })
+      toasts.add({ title: t('connections.modal.connectionStartFailed'), variant: 'error' })
       setConnecting(null)
     }
   }
@@ -77,14 +79,14 @@ export default function ConnectAccountModal({
   return (
     <Dialog.Root open={visible} onOpenChange={(open) => { if (!open) onCancel() }}>
       <Dialog className="responsive-dialog overflow-y-auto p-6" size="base">
-        <Dialog.Title className="text-lg font-semibold mb-4">Connect Account</Dialog.Title>
+        <Dialog.Title className="text-lg font-semibold mb-4">{t('connections.account.connectAccountTitle')}</Dialog.Title>
         {vendorsLoading ? (
           <div className="text-center py-8">
             <Loader />
           </div>
         ) : vendors.length === 0 ? (
           <div className="text-center py-8">
-            <Text variant="secondary">No services available to connect.</Text>
+            <Text variant="secondary">{t('connections.account.noServicesAvailable')}</Text>
           </div>
         ) : (
           <div className="flex flex-col gap-3 mt-2">

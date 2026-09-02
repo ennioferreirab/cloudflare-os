@@ -7,11 +7,13 @@ import { useState, useEffect, useRef } from 'react'
 import UserMenu from './UserMenu'
 import TopBarNotice from '../TopBarNotice'
 import SiteLogo from './SiteLogo'
+import { useLocale } from '../i18n'
 
 export default function Header() {
   const auth = useOptionalAuthenticatedApi()
   const gatekeeperApps = useGatekeeperApps()
   const siteName = useSiteName()
+  const { t } = useLocale()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const headerRef = useRef<HTMLElement>(null)
@@ -62,7 +64,7 @@ export default function Header() {
               activeProps={{ className: navLinkActiveClass }}
               activeOptions={{ exact: true }}
             >
-              Home
+              {t('misc.header.home')}
             </Link>
             <Link
               to="/gatekeepers"
@@ -70,14 +72,14 @@ export default function Header() {
               activeProps={{ className: navLinkActiveClass }}
               activeOptions={{ exact: true }}
             >
-              Gatekeepers
+              {t('misc.header.gatekeepers')}
             </Link>
             <Link
               to="/explore"
               className={navLinkClass}
               activeProps={{ className: navLinkActiveClass }}
             >
-              Explore
+              {t('misc.header.explore')}
             </Link>
             {gatekeeperApps.map((app) => (
               <Link
@@ -106,6 +108,7 @@ export default function Header() {
           <div className="sm:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? t('misc.header.closeMenu') : t('misc.header.openMenu')}
               className="w-8 h-8 rounded-md flex items-center justify-center hover:bg-kumo-tint transition-colors text-kumo-default"
             >
               {mobileMenuOpen ? <X size={20} /> : <List size={20} />}
@@ -125,7 +128,7 @@ export default function Header() {
               activeProps={{ className: navLinkActiveClass }}
               activeOptions={{ exact: true }}
             >
-              Home
+              {t('misc.header.home')}
             </Link>
             <Link
               to="/gatekeepers"
@@ -134,7 +137,7 @@ export default function Header() {
               activeProps={{ className: navLinkActiveClass }}
               activeOptions={{ exact: true }}
             >
-              Gatekeepers
+              {t('misc.header.gatekeepers')}
             </Link>
             <Link
               to="/explore"
@@ -142,7 +145,7 @@ export default function Header() {
               className={navLinkClass}
               activeProps={{ className: navLinkActiveClass }}
             >
-              Explore
+              {t('misc.header.explore')}
             </Link>
             {gatekeeperApps.map((app) => (
               <Link
@@ -167,7 +170,7 @@ export default function Header() {
                   className={navLinkClass}
                   activeProps={{ className: navLinkActiveClass }}
                 >
-                  Profile
+                  {t('misc.header.profile')}
                 </Link>
                 <Link
                   to="/providers"
@@ -175,7 +178,7 @@ export default function Header() {
                   className={navLinkClass}
                   activeProps={{ className: navLinkActiveClass }}
                 >
-                  Providers
+                  {t('misc.header.providers')}
                 </Link>
                 {auth.isAdmin && (
                   <Link
@@ -184,14 +187,14 @@ export default function Header() {
                     className={navLinkClass}
                     activeProps={{ className: navLinkActiveClass }}
                   >
-                    Admin
+                    {t('misc.header.admin')}
                   </Link>
                 )}
                 <button
                   onClick={() => { closeMobileMenu(); auth.logout() }}
                   className="text-left text-sm px-3 py-1.5 rounded-md text-kumo-danger hover:bg-kumo-tint transition-colors"
                 >
-                  Sign out
+                  {t('misc.header.signOut')}
                 </button>
               </>
             )}

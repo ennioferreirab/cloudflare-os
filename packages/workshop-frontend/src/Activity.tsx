@@ -19,8 +19,10 @@ import { useVendorBranding } from './useVendorBranding'
 import { useResolveAction } from './useResolveAction'
 import { safeExternalUrl } from './utils/safeExternalUrl'
 import AutoApproveConfirmDialog from './components/AutoApproveConfirmDialog'
+import { formatDate, formatRelativeTime as formatLocalizedRelativeTime, useLocale } from './i18n'
 
 export type ActivityView = 'review' | 'history' | 'auto'
+type Translate = ReturnType<typeof useLocale>['t']
 
 const PANE_BAR = 'flex h-9 flex-shrink-0 items-center border-b border-kumo-line'
 
@@ -34,24 +36,21 @@ interface ActivityProps {
   autoApproveReloadTrigger?: number
 }
 
-/** Pending-status copy while the pending set is still being gathered (also in the popover). */
-export const PENDING_CHECKING_COPY = 'Checking for requests…'
-/** Pending-status copy when gathering the pending set failed (also in the popover). */
-export const PENDING_ERROR_COPY = 'Could not check for requests — reload the page to try again.'
-
-const HISTORY_FILTERS: { value: HistoryViewFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'action', label: 'Actions' },
-  { value: 'observation', label: 'Observations' },
-  { value: 'bindHook', label: 'Hooks' },
-]
+function historyFilters(t: Translate): { value: HistoryViewFilter; label: string }[] {
+  return [
+    { value: 'all', label: t('activityArea.common.all') },
+    { value: 'action', label: t('activityArea.activity.filterActions') },
+    { value: 'observation', label: t('activityArea.activity.filterObservations') },
+    { value: 'bindHook', label: t('activityArea.activity.filterHooks') },
+  ]
+}
 
 function formatClockTime(date: Date): string {
-  return new Date(date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  return formatDate(new Date(date), { hour: 'numeric', minute: '2-digit' })
 }
 
 function formatFullDate(date: Date): string {
-  return new Date(date).toLocaleString([], {
+  return formatDate(new Date(date), {
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -61,46 +60,47 @@ function formatFullDate(date: Date): string {
 
 export function formatRelativeTime(date: Date): string {
   const minutes = Math.floor(Math.max(0, Date.now() - new Date(date).getTime()) / 60_000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
+  if (minutes < 1) return formatLocalizedRelativeTime(0, 'second', { numeric: 'auto' })
+  if (minutes < 60) return formatLocalizedRelativeTime(-minutes, 'minute', { numeric: 'auto', style: 'narrow' })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
+  if (hours < 24) return formatLocalizedRelativeTime(-hours, 'hour', { numeric: 'auto', style: 'narrow' })
+  return formatLocalizedRelativeTime(-Math.floor(hours / 24), 'day', { numeric: 'auto', style: 'narrow' })
 }
 
 function startOfDay(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 }
 
-function dayLabel(date: Date): string {
+function dayLabel(date: Date, t: Translate): string {
   const value = new Date(date)
   const days = Math.round((startOfDay(new Date()) - startOfDay(value)) / 86_400_000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  return value.toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' })
+  if (days === 0) return t('activityArea.activity.today')
+  if (days === 1) return t('activityArea.activity.yesterday')
+  return formatDate(value, { month: 'long', day: 'numeric', year: 'numeric' })
 }
 
 function activityStatus(
   record: ActionLogEntry,
+  t: Translate,
 ): { label: string; dotClass: string; textClass: string } {
   if (record.type === 'observation') {
-    return { label: 'Observed', dotClass: 'bg-kumo-inactive', textClass: 'text-kumo-subtle' }
+    return { label: t('activityArea.activity.observed'), dotClass: 'bg-kumo-inactive', textClass: 'text-kumo-subtle' }
   }
   if (record.type === 'bindHook') {
     if (record.hookId === undefined) {
-      return { label: 'Deleted', dotClass: 'bg-kumo-inactive', textClass: 'text-kumo-subtle' }
+      return { label: t('activityArea.activity.deleted'), dotClass: 'bg-kumo-inactive', textClass: 'text-kumo-subtle' }
     }
     return record.enabled
-      ? { label: 'Enabled', dotClass: 'bg-kumo-success', textClass: 'text-kumo-subtle' }
-      : { label: 'Disabled', dotClass: 'bg-kumo-inactive', textClass: 'text-kumo-subtle' }
+      ? { label: t('activityArea.common.enabled'), dotClass: 'bg-kumo-success', textClass: 'text-kumo-subtle' }
+      : { label: t('activityArea.common.disabled'), dotClass: 'bg-kumo-inactive', textClass: 'text-kumo-subtle' }
   }
   if (record.state === 'pending') {
-    return { label: 'Pending', dotClass: 'bg-kumo-brand', textClass: 'text-kumo-strong' }
+    return { label: t('activityArea.common.pending'), dotClass: 'bg-kumo-brand', textClass: 'text-kumo-strong' }
   }
   if (record.state === 'rejected') {
-    return { label: 'Denied', dotClass: 'bg-kumo-danger', textClass: 'text-kumo-danger' }
+    return { label: t('activityArea.common.denied'), dotClass: 'bg-kumo-danger', textClass: 'text-kumo-danger' }
   }
-  return { label: 'Approved', dotClass: 'bg-kumo-success', textClass: 'text-kumo-subtle' }
+  return { label: t('activityArea.common.approved'), dotClass: 'bg-kumo-success', textClass: 'text-kumo-subtle' }
 }
 
 function TypeIcon({ record, className }: { record: ActionLogEntry; className?: string }) {
@@ -110,15 +110,16 @@ function TypeIcon({ record, className }: { record: ActionLogEntry; className?: s
   return <ShieldCheck {...props} />
 }
 
-function LoadOlderButton({ history, className, label = 'Load older' }: {
+function LoadOlderButton({ history, className, label }: {
   history: { loadMore: () => void; isLoadingMore: boolean }
   className?: string
   label?: string
 }) {
+  const { t } = useLocale()
   return (
     <WorkshopButton className={className} onClick={history.loadMore}
         disabled={history.isLoadingMore}>
-      {history.isLoadingMore ? 'Loading…' : label}
+      {history.isLoadingMore ? t('activityArea.common.loading') : (label ?? t('activityArea.activity.loadOlder'))}
     </WorkshopButton>
   )
 }
@@ -157,6 +158,9 @@ export default function Activity({
   onAutoApproveChange,
   autoApproveReloadTrigger,
 }: ActivityProps) {
+  const { t } = useLocale()
+  const translateRef = useRef(t)
+  translateRef.current = t
   const { status: pendingStatus, pending: pendingActions } = useActions(overseer)
   const [historyFilter, setHistoryFilter] = useState<HistoryViewFilter>('all')
   const [processingActions, setProcessingActions] = useState<Set<number>>(new Set())
@@ -178,13 +182,13 @@ export default function Activity({
   const historyGroups = useMemo(() => {
     const groups: { label: string; records: ActionLogEntry[] }[] = []
     for (const record of history.entries) {
-      const label = dayLabel(actionChangeTime(record))
+      const label = dayLabel(actionChangeTime(record), t)
       const last = groups.at(-1)
       if (last?.label === label) last.records.push(record)
       else groups.push({ label, records: [record] })
     }
     return groups
-  }, [history.entries])
+  }, [history.entries, t])
 
   const resolveAction = useResolveAction(overseer, setProcessingActions)
 
@@ -195,7 +199,12 @@ export default function Activity({
       else await overseer.disableHook(hookId)
     } catch (error) {
       console.error('Failed to toggle hook:', error)
-      toasts.add({ title: `Failed to ${enabled ? 'enable' : 'disable'} hook`, variant: 'error' })
+      toasts.add({
+        title: translateRef.current('activityArea.activity.hookToggleFailed', {
+          action: enabled ? translateRef.current('activityArea.common.enable') : translateRef.current('activityArea.common.disable'),
+        }),
+        variant: 'error',
+      })
     } finally {
       setTogglingHooks(previous => {
         const next = new Set(previous)
@@ -218,9 +227,9 @@ export default function Activity({
         <>
           <div className={`${PANE_BAR} gap-2 px-5`}>
             <span className="text-[12.5px] font-medium leading-[17px] tracking-[-0.15px] text-kumo-default">
-              {pendingActions.length} {pendingActions.length === 1 ? 'request' : 'requests'} waiting
+              {t('activityArea.activity.requestsWaiting', { count: pendingActions.length, noun: pendingActions.length === 1 ? t('activityArea.activity.request') : t('activityArea.activity.requests') })}
             </span>
-            <span className="ml-auto text-[11.5px] leading-[17px] text-kumo-inactive">Oldest first</span>
+            <span className="ml-auto text-[11.5px] leading-[17px] text-kumo-inactive">{t('activityArea.activity.oldestFirst')}</span>
           </div>
           <div className="min-h-0 flex-1 overflow-auto">
             {pendingActions.map(record => {
@@ -256,12 +265,12 @@ export default function Activity({
             })}
             {pendingStatus === 'checking' && (
               <p className="m-0 px-5 py-3 text-center text-[12px] leading-4 text-kumo-inactive">
-                Still checking older activity…
+                {t('activityArea.activity.stillChecking')}
               </p>
             )}
             {pendingStatus === 'error' && (
               <p className="m-0 px-5 py-3 text-center text-[12px] leading-4 text-kumo-inactive">
-                Could not finish checking for requests — reload the page to try again.
+                {t('activityArea.activity.finishCheckingFailed')}
               </p>
             )}
           </div>
@@ -272,7 +281,7 @@ export default function Activity({
     if (pendingStatus === 'checking') {
       return (
         <div className="flex flex-1 items-center justify-center text-[13px] text-kumo-subtle">
-          {PENDING_CHECKING_COPY}
+          {t('activityArea.activity.checkingRequests')}
         </div>
       )
     }
@@ -280,8 +289,8 @@ export default function Activity({
     if (pendingStatus === 'error') {
       return (
         <ActivityNotice
-          title="Could not check for requests"
-          description="Reload the page to try again."
+          title={t('activityArea.activity.checkRequestsFailed')}
+          description={t('activityArea.activity.reloadPage')}
         />
       )
     }
@@ -289,11 +298,11 @@ export default function Activity({
     return (
       <ActivityNotice
         icon={<Check size={17} weight="bold" />}
-        title="Nothing to review"
-        description="Requests that need your approval show up here and in the workspace header."
+        title={t('activityArea.activity.nothingToReview')}
+        description={t('activityArea.activity.reviewDescription')}
       >
         <WorkshopButton className="mt-4" onClick={() => onViewChange('history')}>
-          View history
+          {t('activityArea.activity.viewHistory')}
         </WorkshopButton>
       </ActivityNotice>
     )
@@ -304,9 +313,9 @@ export default function Activity({
       return (
         <div className="min-h-0 flex-1 overflow-auto">
           <div className="grid grid-cols-[54px_minmax(0,1fr)_auto_16px] items-center gap-3 border-b border-kumo-line bg-kumo-elevated/50 px-5 py-1.5 text-[11px] font-medium uppercase tracking-[0.06em] text-kumo-inactive">
-            <span>Time</span>
-            <span>Event</span>
-            <span>Status</span>
+            <span>{t('activityArea.activity.time')}</span>
+            <span>{t('activityArea.activity.event')}</span>
+            <span>{t('activityArea.activity.status')}</span>
             <span />
           </div>
           {historyGroups.map(group => (
@@ -334,9 +343,9 @@ export default function Activity({
           {history.loadMoreFailed ? (
             <div className="flex items-center justify-center gap-3 py-3">
               <span className="text-[12px] leading-4 text-kumo-inactive">
-                Couldn't load older activity
+                {t('activityArea.activity.olderLoadFailed')}
               </span>
-              <LoadOlderButton history={history} label="Retry" />
+              <LoadOlderButton history={history} label={t('activityArea.common.retry')} />
             </div>
           ) : history.hasMore && (
             <div className="flex justify-center py-3">
@@ -349,8 +358,8 @@ export default function Activity({
 
     if (history.status === 'error') {
       return (
-        <ActivityNotice title="Could not load activity">
-          <LoadOlderButton className="mt-4" history={history} label="Retry" />
+        <ActivityNotice title={t('activityArea.activity.activityLoadFailed')}>
+          <LoadOlderButton className="mt-4" history={history} label={t('activityArea.common.retry')} />
         </ActivityNotice>
       )
     }
@@ -358,14 +367,14 @@ export default function Activity({
     if (history.status === 'loading') {
       return (
         <div className="flex flex-1 items-center justify-center text-[13px] text-kumo-subtle">
-          Loading activity…
+          {t('activityArea.activity.loadingActivity')}
         </div>
       )
     }
 
     if (history.hasMore) {
       return (
-        <ActivityNotice title="Nothing in the most recent activity">
+        <ActivityNotice title={t('activityArea.activity.nothingRecent')}>
           <LoadOlderButton className="mt-4" history={history} />
         </ActivityNotice>
       )
@@ -374,20 +383,20 @@ export default function Activity({
     if (historyFilter === 'all') {
       return (
         <ActivityNotice
-          title="No activity yet"
-          description="Every resource an agent reads or changes is recorded here."
+          title={t('activityArea.activity.noActivity')}
+          description={t('activityArea.activity.noActivityDescription')}
         />
       )
     }
 
     return (
-      <ActivityNotice title="No matching events">
+      <ActivityNotice title={t('activityArea.activity.noMatchingEvents')}>
         <button
           type="button"
           onClick={() => setHistoryFilter('all')}
           className="mt-1.5 cursor-pointer text-[12px] font-medium text-kumo-subtle hover:text-kumo-default"
         >
-          Show all activity
+          {t('activityArea.activity.showAllActivity')}
         </button>
       </ActivityNotice>
     )
@@ -401,7 +410,7 @@ export default function Activity({
         return (
           <>
             <div className={`${PANE_BAR} gap-1 px-3`}>
-              {HISTORY_FILTERS.map(filter => (
+              {historyFilters(t).map(filter => (
                 <button
                   key={filter.value}
                   type="button"
@@ -416,7 +425,7 @@ export default function Activity({
                 </button>
               ))}
               <span className="ml-auto pr-2 text-[11.5px] leading-[17px] tabular-nums text-kumo-inactive">
-                {history.entries.length} loaded
+                {t('activityArea.activity.loaded', { count: history.entries.length })}
               </span>
             </div>
             {renderHistoryBody()}
@@ -457,6 +466,7 @@ function AutoApprovalPanel({
   overseer: RpcStub<Overseer>
   reloadTrigger?: number
 }) {
+  const { t } = useLocale()
   const { entries, isLoading, loadError, pending, refresh, setEnabled } = useAutoApproval(overseer)
   const { authenticatedApi } = useAuthenticatedApi()
   const vendorBranding = useVendorBranding(authenticatedApi)
@@ -486,17 +496,17 @@ function AutoApprovalPanel({
       }
     }
     for (const group of byConnection.values()) {
-      group.title ||= 'Unavailable connection'
+      group.title ||= t('activityArea.activity.unavailableConnection')
       group.entries = group.entries.toSorted((a, b) =>
         a.actionKind.label.localeCompare(b.actionKind.label))
     }
     return [...byConnection.values()].toSorted((a, b) => a.title.localeCompare(b.title))
-  }, [entries])
+  }, [entries, t])
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center text-[13px] text-kumo-subtle">
-        Loading auto-approval…
+        {t('activityArea.activity.loadingAutoApproval')}
       </div>
     )
   }
@@ -505,16 +515,16 @@ function AutoApprovalPanel({
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
         <p className="m-0 text-[13px] font-medium leading-[18px] tracking-[-0.25px] text-kumo-default">
-          {loadError ? 'Could not load auto-approval' : 'Nothing can run automatically'}
+          {loadError ? t('activityArea.activity.autoApprovalLoadFailed') : t('activityArea.activity.nothingAutomatic')}
         </p>
         <p className="mt-1 max-w-xs text-[13px] leading-[18px] tracking-[-0.25px] text-kumo-subtle">
           {loadError
-            ? 'The current rules may be incomplete. Try loading them again.'
-            : 'Action types appear here once a connected resource offers one its author marked safe to apply without review.'}
+            ? t('activityArea.activity.autoApprovalIncomplete')
+            : t('activityArea.activity.autoApprovalEmpty')}
         </p>
         {loadError && (
           <WorkshopButton className="mt-4" onClick={() => void refresh()}>
-            Retry
+            {t('activityArea.common.retry')}
           </WorkshopButton>
         )}
       </div>
@@ -526,8 +536,8 @@ function AutoApprovalPanel({
       <div className={`${PANE_BAR} gap-3 px-5`}>
         <p className="m-0 min-w-0 flex-1 truncate text-[12.5px] leading-[17px] tracking-[-0.2px] text-kumo-subtle">
           {loadError
-            ? 'Some auto-approval options could not be loaded.'
-            : 'Actions agents may take without asking. Everything else waits for your review.'}
+            ? t('activityArea.activity.autoApprovalSomeFailed')
+            : t('activityArea.activity.autoApprovalDescription')}
         </p>
         {loadError && (
           <button
@@ -535,7 +545,7 @@ function AutoApprovalPanel({
             onClick={() => void refresh()}
             className="cursor-pointer text-[12px] font-medium text-kumo-default hover:text-kumo-default-hover"
           >
-            Retry
+            {t('activityArea.common.retry')}
           </button>
         )}
       </div>
@@ -568,17 +578,20 @@ function AutoApprovalPanel({
                     </span>
                     <span className="mt-0.5 block text-[12px] leading-4 tracking-[-0.2px] text-kumo-inactive">
                       {entry.orphaned
-                        ? 'This connection no longer offers this action; the rule still applies.'
+                        ? t('activityArea.activity.orphanedRule')
                         : entry.enabled
-                          ? 'Applied without asking'
-                          : 'Waits for your approval'}
+                          ? t('activityArea.activity.appliedWithoutAsking')
+                          : t('activityArea.activity.waitsForApproval')}
                     </span>
                   </span>
                   <Switch
                     size="sm"
                     checked={entry.enabled}
                     disabled={busy}
-                    aria-label={`${entry.enabled ? 'Disable' : 'Enable'} auto-approval for ${entry.actionKind.label}`}
+                    aria-label={t('activityArea.activity.toggleAutoApproval', {
+                      action: entry.enabled ? t('activityArea.common.disable') : t('activityArea.common.enable'),
+                      name: entry.actionKind.label,
+                    })}
                     onCheckedChange={enabled => void setEnabled(entry, enabled)}
                   />
                 </div>
@@ -673,11 +686,12 @@ function HistoryRow({
   togglingHook: boolean
   onToggleHook: (hookId: number, enabled: boolean) => void
 }) {
+  const { t } = useLocale()
   const resourceUrl = safeExternalUrl(record.resourceUrl)
   const resolvedBy = record.type === 'action' ? record.resolvedBy : undefined
   const autoApproved = record.type === 'action' && record.autoApproved === true
   const at = actionChangeTime(record)
-  const status = activityStatus(record)
+  const status = activityStatus(record, t)
 
   return (
     <div className={expanded ? 'bg-kumo-elevated/30' : ''}>
@@ -721,7 +735,9 @@ function HistoryRow({
             <span className="text-kumo-subtle">{record.resourceTitle}</span>
             {resolvedBy && (
               <ResolverBadge profileId={resolvedBy.id}>
-                {autoApproved ? `Auto-approved (${resolvedBy.name}'s rule)` : `By ${resolvedBy.name}`}
+                {autoApproved
+                  ? t('activityArea.activity.autoApproved', { name: resolvedBy.name })
+                  : t('activityArea.activity.by', { name: resolvedBy.name })}
               </ResolverBadge>
             )}
             {resourceUrl && (
@@ -731,7 +747,7 @@ function HistoryRow({
                 rel="noopener noreferrer"
                 className="text-kumo-subtle hover:text-kumo-default hover:underline"
               >
-                Open resource
+                {t('activityArea.activity.openResource')}
               </a>
             )}
             {record.type === 'bindHook' && record.hookId !== undefined && (

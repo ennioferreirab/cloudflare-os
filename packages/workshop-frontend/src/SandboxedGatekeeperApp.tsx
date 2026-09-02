@@ -18,6 +18,9 @@ import {
   parseGatekeeperAppWorkspaceTarget,
   type GatekeeperAppWorkspaceTarget,
 } from './gatekeeperAppNavigation'
+import { useLocale } from './i18n'
+
+type GatekeeperAppLocaleReceiver = RpcTarget & { setLocale(locale: string): void }
 
 // The content-pane rect, in viewport coordinates, that the app pins its page to while the iframe
 // is full-viewport.
@@ -88,6 +91,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
   #presenting = false
   #theme: GatekeeperAppTheme
   #themeReceiver: RpcStub<GatekeeperAppThemeReceiver> | null = null
+  #locale: string
+  #localeReceiver: RpcStub<GatekeeperAppLocaleReceiver> | null = null
   // Presentation changes are coalesced to a single apply per animation frame (see #applyPending).
   #pendingActive: boolean | null = null
   #pendingResolvers: ((ack: PresentAck) => void)[] = []
@@ -97,12 +102,14 @@ class GatekeeperAppHostImpl extends RpcTarget {
     capability: any,
     present: PresentController,
     theme: GatekeeperAppTheme,
+    locale: string,
     openTarget: OpenTarget,
     openPrompt: OpenPrompt,
     resolveWorkspaceTitles: ResolveWorkspaceTitles,
   ) {
     super()
     this.#theme = theme
+    this.#locale = locale
     const { capability: ui, dispose } = createRateLimitedCapability(capability, {
       maxConcurrency: 8,
       maxCallsPerMinute: 600,
@@ -169,6 +176,31 @@ class GatekeeperAppHostImpl extends RpcTarget {
     }
   }
 
+  // Locale is a separate subscription so visual theme changes never imply language changes.
+  subscribeLocale(receiver: RpcStub<GatekeeperAppLocaleReceiver>): string {
+    this.#localeReceiver?.[Symbol.dispose]?.()
+    this.#localeReceiver = receiver.dup()
+    return this.#locale
+  }
+
+  #dropLocaleReceiver(receiver: RpcStub<GatekeeperAppLocaleReceiver>) {
+    if (this.#localeReceiver !== receiver) return
+    receiver[Symbol.dispose]?.()
+    this.#localeReceiver = null
+  }
+
+  updateLocale(locale: string) {
+    this.#locale = locale
+    const receiver = this.#localeReceiver
+    if (!receiver) return
+
+    try {
+      Promise.resolve(receiver.setLocale(locale)).catch(() => this.#dropLocaleReceiver(receiver))
+    } catch {
+      this.#dropLocaleReceiver(receiver)
+    }
+  }
+
   // Queue a presentation change; the latest requested state is applied on the next frame.
   setPresenting(active: boolean): Promise<PresentAck> {
     return new Promise((resolve) => {
@@ -197,6 +229,8 @@ class GatekeeperAppHostImpl extends RpcTarget {
     this.#disposeRateLimiter()
     this.#themeReceiver?.[Symbol.dispose]?.()
     this.#themeReceiver = null
+    this.#localeReceiver?.[Symbol.dispose]?.()
+    this.#localeReceiver = null
     if (this.#frameId !== null) {
       cancelAnimationFrame(this.#frameId)
       this.#frameId = null
@@ -222,6 +256,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
 }) {
   const navigate = useNavigate()
   const { authenticatedApi } = useAuthenticatedApi()
+  const { locale, t } = useLocale()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const sessionRef = useRef<{ [Symbol.dispose]?(): void } | null>(null)
   const hostRef = useRef<GatekeeperAppHostImpl | null>(null)
@@ -240,6 +275,11 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
   useEffect(() => {
     hostRef.current?.updateTheme({ mode: resolvedThemeMode, accentColor })
   }, [resolvedThemeMode, accentColor])
+  const localeRef = useRef(locale)
+  localeRef.current = locale
+  useEffect(() => {
+    hostRef.current?.updateLocale(locale)
+  }, [locale])
 
   const setOverlayPhase = useCallback((next: OverlayState) => {
     if (overlayRef.current === next) return
@@ -322,6 +362,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
         capabilityRef.current,
         present,
         themeRef.current,
+        localeRef.current,
         openTarget,
         openPrompt,
         resolveWorkspaceTitles,
@@ -368,7 +409,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
       // allow-same-origin (the frame stays an opaque origin), and the app's CSP keeps connect-src 'none'.
       sandbox="allow-scripts allow-modals"
       allow="clipboard-write"
-      title="Gatekeeper app"
+      title={t('connections.app.iframeTitle')}
       style={iframeStyleForOverlay(overlay)}
     />
   )

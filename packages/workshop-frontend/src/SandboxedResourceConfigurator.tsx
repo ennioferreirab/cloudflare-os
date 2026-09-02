@@ -5,6 +5,7 @@ import { ResourceConfiguratorFrame, ResourceConfiguratorHost, ResourceConfigurat
 import { createRateLimitedCapability } from './rateLimitedCapability'
 import { useTheme } from './ThemeContext'
 import { forwardTrustedFrameError } from './errorReporting'
+import { useLocale } from './i18n'
 
 // Upper bound on iframe height. Sized to leave room for a typical configurator form plus an open
 // autocomplete popup, while staying within a reasonable viewport even on short screens.
@@ -83,6 +84,7 @@ export default function SandboxedResourceConfigurator({
   resourceUrlPattern?: string,
 }) {
   const { resolvedThemeMode } = useTheme()
+  const { t, locale } = useLocale()
   const placeholderRef = useRef<HTMLDivElement>(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const rpcSessionRef = useRef<{ [Symbol.dispose]?(): void } | null>(null)
@@ -93,6 +95,8 @@ export default function SandboxedResourceConfigurator({
   const iframeConnectedRef = useRef(false)
   const iframeInvalidatedRef = useRef(false)
   const iframeLoadCountRef = useRef(0)
+  const localeRef = useRef(locale)
+  localeRef.current = locale
   const pendingScrollRef = useRef({ x: 0, y: 0 })
   const scrollFrameRef = useRef<number | null>(null)
   const [height, setHeight] = useState(MIN_CONFIGURATOR_HEIGHT)
@@ -230,6 +234,7 @@ export default function SandboxedResourceConfigurator({
     rpcSessionRef.current = iframe
     iframeRpcRef.current?.[Symbol.dispose]?.()
     iframeRpcRef.current = iframe.dup()
+    iframe.updateLocale(localeRef.current)
     const placeholderRect = placeholderRef.current?.getBoundingClientRect()
     if (placeholderRect) {
       iframe.updateViewport(placeholderRect.top + topOffsetRef.current, window.innerHeight)
@@ -249,16 +254,16 @@ export default function SandboxedResourceConfigurator({
   }
 
   const collectResourceUrl = () => {
-    if (iframeInvalidatedRef.current) return Promise.reject(new Error('Configurator is no longer available.'))
+    if (iframeInvalidatedRef.current) return Promise.reject(new Error(t('connections.configurator.noLongerAvailable')))
     const iframe = iframeRpcRef.current
-    if (!iframe || !iframeConnectedRef.current) return Promise.reject(new Error('Configurator is not ready.'))
+    if (!iframe || !iframeConnectedRef.current) return Promise.reject(new Error(t('connections.configurator.notReady')))
 
     let timeout: number | null = null
     return Promise.race([
       iframe.collectResourceUrl(),
       new Promise<never>((_, reject) => {
         timeout = window.setTimeout(() => {
-          reject(new Error('Configurator did not provide its resource URL. Please try again.'))
+          reject(new Error(t('connections.configurator.noResourceUrl')))
         }, COLLECT_VALUES_TIMEOUT_MS)
       }),
     ]).finally(() => {
@@ -305,7 +310,11 @@ export default function SandboxedResourceConfigurator({
     return () => {
       onCollectResourceUrlChange?.(null)
     }
-  }, [onCollectResourceUrlChange])
+  }, [onCollectResourceUrlChange, t])
+
+  useEffect(() => {
+    if (iframeConnectedRef.current) iframeRpcRef.current?.updateLocale(locale)
+  }, [locale])
 
   useLayoutEffect(() => {
     updateFrameRect()
@@ -391,7 +400,7 @@ export default function SandboxedResourceConfigurator({
         srcDoc={frame.iframeHtml}
         onLoad={handleIframeLoad}
         sandbox="allow-scripts"
-        title="Resource configurator"
+        title={t('connections.configurator.iframeTitle')}
         scrolling="no"
         style={{
           position: 'fixed',

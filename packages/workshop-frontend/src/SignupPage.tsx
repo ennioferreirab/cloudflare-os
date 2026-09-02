@@ -10,36 +10,47 @@ import { useDocumentTitle } from "./useDocumentTitle";
 import OAuthButtons from "./components/auth/OAuthButtons";
 import SiteLogo from "./components/SiteLogo";
 import { useConnectionLost } from "./RpcContext";
+import LanguageSelector from "./components/LanguageSelector";
+import { useLocale } from "./i18n";
 
 interface SignupPageProps {
   rpcStub: RpcStub<PublicApi>;
 }
+
+type SignupError =
+  | { key: "auth.signUp.usernameExists" | "auth.signUp.failed" }
+  | { message: string };
 
 export default function SignupPage({ rpcStub }: SignupPageProps) {
   const serverConfig = useServerConfig();
   const serverConfigError = useServerConfigError();
   const siteName = useSiteName();
   const connectionLost = useConnectionLost();
-  useDocumentTitle("Create account");
+  const { t } = useLocale();
+  useDocumentTitle(t("auth.signUp.title"));
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<SignupError | null>(null);
+
+  const errorMessage = error
+    ? "key" in error ? t(error.key) : error.message
+    : null;
 
   const usernameError =
     username && !/^[a-z0-9_-]+$/i.test(username)
-      ? "Letters, numbers, underscores, and hyphens only"
+      ? t("auth.signUp.usernameCharacters")
       : undefined;
 
   const passwordError =
     password && password.length < 8
-      ? "Must be at least 8 characters"
+      ? t("auth.signUp.passwordMinimum")
       : undefined;
 
   const confirmError =
     confirmPassword && confirmPassword !== password
-      ? "Passwords do not match"
+      ? t("auth.signUp.passwordsDoNotMatch")
       : undefined;
 
   const canSubmit =
@@ -68,10 +79,10 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
         localStorage.setItem("authToken", token);
         window.location.href = "/";
       } else {
-        setError("Username already exists");
+        setError({ key: "auth.signUp.usernameExists" });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Account creation failed");
+      setError(err instanceof Error ? { message: err.message } : { key: "auth.signUp.failed" });
     } finally {
       setLoading(false);
     }
@@ -82,20 +93,22 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
       return (
         <div
           role="alert"
-          className="flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8"
+          className="relative flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8"
         >
+          <LanguageSelector className="absolute right-4 top-4 w-[170px]" />
           <p className="text-sm text-kumo-danger text-center">
-            Couldn&apos;t load deployment settings.
+            {t("auth.deploymentSettingsFailed")}
           </p>
-          <Button variant="secondary" onClick={() => window.location.reload()}>Reload</Button>
+          <Button variant="secondary" onClick={() => window.location.reload()}>{t("common.reload")}</Button>
         </div>
       );
     }
     return (
-      <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8">
+      <div className="relative flex h-full min-h-0 flex-col items-center justify-center gap-4 overflow-y-auto bg-kumo-base px-4 py-8">
+        <LanguageSelector className="absolute right-4 top-4 w-[170px]" />
         <Loader size="lg" />
         <p className="text-sm text-kumo-subtle text-center">
-          {connectionLost ? "Can't reach the server. Retrying…" : "Loading…"}
+          {connectionLost ? t("auth.serverUnavailable") : t("common.loading")}
         </p>
       </div>
     );
@@ -108,6 +121,7 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col items-center justify-start overflow-y-auto bg-kumo-base px-4 py-8">
+      <LanguageSelector className="absolute right-4 top-4 z-10 w-[170px]" />
       {/* Dot grid — fades from top to bottom */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -133,16 +147,16 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
           <h1 className="text-xl font-semibold text-kumo-default">
             {siteName}
           </h1>
-          <p className="text-sm text-kumo-subtle mt-1">Create your account</p>
+          <p className="text-sm text-kumo-subtle mt-1">{t("auth.signUp.subtitle")}</p>
         </div>
 
         {!signupsEnabled && (
           <Banner
             variant="default"
-            title="Signups are closed"
+            title={t("auth.signUp.signupsClosed")}
             className="mb-4"
           >
-            New account registration is currently disabled on this deployment.
+            {t("auth.signUp.signupsClosedDescription")}
           </Banner>
         )}
 
@@ -152,20 +166,20 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
                 className="w-full"
-                label="Username"
+                label={t("auth.username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoFocus
                 autoComplete="username"
                 disabled={loading}
-                placeholder="your-username"
+                placeholder={t("auth.usernamePlaceholder")}
                 error={usernameError}
               />
 
               <Input
                 className="w-full"
                 type="password"
-                label="Password"
+                label={t("auth.password")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
@@ -177,7 +191,7 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
               <Input
                 className="w-full"
                 type="password"
-                label="Confirm Password"
+                label={t("auth.signUp.confirmPassword")}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
@@ -186,7 +200,7 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
                 error={confirmError}
               />
 
-              {error && <Banner variant="error" title={error} />}
+              {errorMessage && <Banner variant="error" title={errorMessage} />}
 
               <Button
                 type="submit"
@@ -195,7 +209,7 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
                 loading={loading}
                 className="w-full justify-center"
               >
-                Create account
+                {t("auth.signUp.submit")}
               </Button>
             </form>
           </>
@@ -207,7 +221,7 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
             {passwordAuthEnabled && (
               <div className="flex items-center gap-3 mb-4">
                 <div className="h-px flex-1 bg-kumo-line" />
-                <span className="text-xs text-kumo-subtle">or</span>
+                <span className="text-xs text-kumo-subtle">{t("common.or")}</span>
                 <div className="h-px flex-1 bg-kumo-line" />
               </div>
             )}
@@ -217,9 +231,9 @@ export default function SignupPage({ rpcStub }: SignupPageProps) {
 
         {passwordAuthEnabled && (
           <p className="text-center text-sm text-kumo-subtle mt-6">
-            Already have an account?{" "}
+            {t("auth.signUp.alreadyHaveAccount")}{" "}
             <Link to="/" className="text-kumo-brand hover:underline font-medium">
-              Sign in
+              {t("auth.signIn.submit")}
             </Link>
           </p>
         )}
