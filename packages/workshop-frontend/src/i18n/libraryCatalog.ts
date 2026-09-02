@@ -488,7 +488,7 @@ export const libraryPtBR = {
     },
     blueprintsPage: {
       title: 'Explorar',
-      description: 'Descubra playbooks em destaque para usar como ponto de partida. Abra um para criar um espaço de trabalho ou salve-o para reutilizar depois.',
+      description: 'Explore playbooks prontos para iniciar um projeto. Abra um para criar um novo espaço de trabalho agora ou salve-o na sua biblioteca para usar mais tarde.',
       featured: 'Em destaque',
       searchPlaceholder: 'Buscar playbooks…',
       noMatch: 'Nenhum playbook corresponde',
