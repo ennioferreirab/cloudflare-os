@@ -24,6 +24,7 @@ import { GatekeeperConnectCallback, GatekeeperUser } from "@gadgets/workshop-sha
 import { createWorkshopLogger } from "../observability";
 import { CLOUDFLARE_VENDOR_ID } from "../user.js";
 import { readAdminConfig } from "../admin-config.js";
+import { arePublicSignupsEnabled } from "./config.js";
 
 const logger = createWorkshopLogger("workshop.auth");
 
@@ -111,7 +112,8 @@ export class LoginConnectCallbackImpl
           this.ctx.exports.UserDurableObject.idFromName(email));
       // Closed signups block first-time account creation here too (not just password signup); an
       // existing user signing in is unaffected.
-      const signupsEnabled = (await readAdminConfig(this.env)).signupsEnabled;
+      const signupsEnabled = arePublicSignupsEnabled(
+          this.env, (await readAdminConfig(this.env)).signupsEnabled);
       const secret = await userStub.loginOrCreateViaGatekeeper(email, signupsEnabled);
       if (secret === null) {
         loginLogger.info("gatekeeper login finished", {

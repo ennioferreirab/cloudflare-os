@@ -3,6 +3,7 @@ import { useRpcStub } from '../RpcContext'
 import { CF_ACCESS_MODE } from '../useAuth'
 import { Navigate } from '@tanstack/react-router'
 import SignupPage from '../SignupPage'
+import { useServerConfig } from '../ServerConfigContext'
 
 export const Route = createFileRoute('/signup')({
   component: SignupRoute,
@@ -10,8 +11,9 @@ export const Route = createFileRoute('/signup')({
 
 function SignupRoute() {
   const rpcStub = useRpcStub()
-  // Signup is not available in CF Access mode — identity is managed by Access.
-  if (CF_ACCESS_MODE) {
+  const serverConfig = useServerConfig()
+  // Signup is unavailable in CF Access mode and when production closes public registration.
+  if (CF_ACCESS_MODE || serverConfig?.signupsEnabled === false) {
     return <Navigate to="/" replace />
   }
   return <SignupPage rpcStub={rpcStub} />

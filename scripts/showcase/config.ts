@@ -127,7 +127,11 @@ export function buildShowcaseConfigs({
         BASE_URL: `${origin}/gatekeeper/${gatekeeperShortName(pkg.name)}`,
       };
     } else if (pkg.name === "workshop-backend") {
-      config.vars = { ...config.vars, PUBLIC_BASE_URL: origin };
+      config.vars = {
+        ...config.vars,
+        PUBLIC_BASE_URL: origin,
+        DISABLE_PUBLIC_SIGNUPS: "true",
+      };
     } else if (pkg.name === "router") {
       config.routes = [{ pattern: target.domain, custom_domain: true }];
     } else {

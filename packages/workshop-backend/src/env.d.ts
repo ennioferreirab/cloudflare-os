@@ -71,6 +71,13 @@ declare global {
       // on to avoid locking everyone out).
       DISABLE_PASSWORD_AUTH?: string;
 
+      // Hard production override: existing users can log in, but public password/OAuth signups are
+      // disabled even if the admin-managed signup toggle is enabled.
+      DISABLE_PUBLIC_SIGNUPS?: string;
+
+      // Secret bearer token used only by the account-provisioning CLI while public signups are off.
+      ACCOUNT_PROVISIONING_TOKEN?: string;
+
       // Enables the Cloudflare free-tier limits + top-up flow when set to "true".
       ENABLE_CLOUDFLARE_LIMITS?: string;
 

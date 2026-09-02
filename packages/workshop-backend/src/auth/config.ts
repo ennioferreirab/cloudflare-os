@@ -31,3 +31,32 @@ export function isPasswordAuthEnabled(env: Cloudflare.Env): boolean {
   if (env.DISABLE_PASSWORD_AUTH !== "true") return true;
   return !hasAuthGatekeepers(env);
 }
+
+/**
+ * Whether the public application may create new accounts. The deployment-level switch is a hard
+ * override for production; the admin setting remains useful in deployments that do not set it.
+ */
+export function arePublicSignupsEnabled(
+    env: Cloudflare.Env, adminSetting: boolean): boolean {
+  return env.DISABLE_PUBLIC_SIGNUPS !== "true" && adminSetting;
+}
+
+/**
+ * Whether this request carries the deployment's account-provisioning bearer token. Both values are
+ * hashed before comparison so attacker-controlled token lengths do not create a timing oracle.
+ */
+export async function canProvisionAccount(req: Request, env: Cloudflare.Env): Promise<boolean> {
+  const expected = env.ACCOUNT_PROVISIONING_TOKEN;
+  const authorization = req.headers.get("Authorization");
+  if (!expected || !authorization?.startsWith("Bearer ")) return false;
+
+  const supplied = authorization.slice("Bearer ".length);
+  if (!supplied) return false;
+
+  const encoder = new TextEncoder();
+  const [suppliedHash, expectedHash] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(supplied)),
+    crypto.subtle.digest("SHA-256", encoder.encode(expected)),
+  ]);
+  return crypto.subtle.timingSafeEqual(suppliedHash, expectedHash);
+}

@@ -4,7 +4,12 @@ import type { JWTPayload } from "jose";
 import { PublicApi, AuthenticatedApi, Overseer, GadgetMetadataWithTimestamps, AiChatAuthorInfo, AiModelConfig, AiGatewayInfo, AiModelProvider, ConnectedAccountsSubscriber, ConnectedAccountsFilter, GatekeeperVendorFilter, ObserverConfigCallback, BlueprintLibrarySummary, BlueprintPublicInfo, BlueprintUserSummary, BlueprintBindingAssignment, AgentSpawnerConfig, WorkpieceId, BLUEPRINT_SCREENSHOT_PATH_PREFIX, BLUEPRINT_SCREENSHOT_R2_PREFIX, blueprintScreenshotUrl, ServerConfig, CloudflareUsageInfo, CloudflareAccountOption, LoginAttempt, GatekeeperAppInfo, AdminApi, GatekeeperVendorInfo, OutputFormatOffer, ListOutputsResult, createOpenGadgetError, getOpenGadgetErrorCode, OPEN_GADGET_ERROR_CODES, AUTH_ERROR_CODES, createAuthError } from '@gadgets/workshop-shared/api';
 import type { UiFeatureFlags } from "@gadgets/workshop-shared/feature-flags";
 import { getServerConfig } from "./deployment-config.js";
-import { isPasswordAuthEnabled, getAuthGatekeeperAllowlist } from "./auth/config.js";
+import {
+  arePublicSignupsEnabled,
+  canProvisionAccount,
+  getAuthGatekeeperAllowlist,
+  isPasswordAuthEnabled,
+} from "./auth/config.js";
 import { getAuthVendorBinding } from "./auth/auth-vendors.js";
 import { getUsageInfo } from "./ai-gateway-billing/limits/usage-checker.js";
 import { listConnectedAccounts, selectAccount } from "./ai-gateway-billing/cloudflare/connection-service.js";
@@ -638,6 +643,7 @@ class PublicApiImpl extends RpcTarget implements PublicApi {
 
   constructor(private ctx: ExecutionContext, private env: Env,
       private abortSession: (reason: Error) => void,
+      private accountProvisioningAllowed: boolean,
       private accessPayload?: JWTPayload) {
     super();
     this.users = this.ctx.exports.UserDurableObject;
@@ -700,7 +706,8 @@ class PublicApiImpl extends RpcTarget implements PublicApi {
 
     let email = this.accessPayload.email as string;
     let userId = this.users.idFromName(email);
-    let signupsEnabled = (await readAdminConfig(this.env)).signupsEnabled;
+    let signupsEnabled = arePublicSignupsEnabled(
+        this.env, (await readAdminConfig(this.env)).signupsEnabled);
     let accountCreated =
         await this.users.get(userId).authenticateFromCfAccess(email, signupsEnabled);
     if (accountCreated) {
@@ -743,13 +750,15 @@ class PublicApiImpl extends RpcTarget implements PublicApi {
 
   async createAccount(username: string, displayName: string, passwordHash: Uint8Array)
       : Promise<string | null> {
-    if (this.env.CF_ACCESS_AUD) {
+    if (this.env.CF_ACCESS_AUD && !this.accountProvisioningAllowed) {
       throw new Error("This deployment requires Cloudflare Access authentication.");
     }
-    if (!isPasswordAuthEnabled(this.env)) {
+    if (!isPasswordAuthEnabled(this.env) && !this.accountProvisioningAllowed) {
       throw new Error("Password signup is disabled on this deployment. Use a sign-in option.");
     }
-    if (!(await readAdminConfig(this.env)).signupsEnabled) {
+    const signupsEnabled = arePublicSignupsEnabled(
+        this.env, (await readAdminConfig(this.env)).signupsEnabled);
+    if (!signupsEnabled && !this.accountProvisioningAllowed) {
       throw new Error("New signups are currently disabled on this deployment.");
     }
 
@@ -837,9 +846,10 @@ export default {
             }));
       }
 
+      const accountProvisioningAllowed = await canProvisionAccount(req, env);
       let accessPayload: JWTPayload | undefined;
 
-      if (env.CF_ACCESS_AUD) {
+      if (env.CF_ACCESS_AUD && !accountProvisioningAllowed) {
         if (req.headers.get("Origin") !== url.origin) {
           return new Response("Cross-origin API access not allowed.", { status: 403 });
         }
@@ -864,7 +874,7 @@ export default {
       };
 
       return await newWorkersRpcResponse(req,
-          new PublicApiImpl(ctx, env, abortSession, accessPayload),
+          new PublicApiImpl(ctx, env, abortSession, accountProvisioningAllowed, accessPayload),
           { abortSignal: abortController.signal });
     }
 

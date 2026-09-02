@@ -165,12 +165,14 @@ export default function LoginPage({ rpcStub, onLoginSuccess }: LoginPageProps) {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-kumo-subtle mt-6">
-              {t('auth.signIn.noAccount')}{' '}
-              <Link to="/signup" className="text-kumo-brand hover:underline font-medium">
-                {t('auth.signIn.createAccount')}
-              </Link>
-            </p>
+            {serverConfig.signupsEnabled && (
+              <p className="text-center text-sm text-kumo-subtle mt-6">
+                {t('auth.signIn.noAccount')}{' '}
+                <Link to="/signup" className="text-kumo-brand hover:underline font-medium">
+                  {t('auth.signIn.createAccount')}
+                </Link>
+              </p>
+            )}
           </>
         )}
 

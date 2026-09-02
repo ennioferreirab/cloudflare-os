@@ -24,6 +24,10 @@ Set these values on `ennioferreirab/cloudflare-os`:
 Every push to `main` runs `.github/workflows/deploy-showcase.yml`. A manual run is also available
 through `workflow_dispatch`. Deployments are serialized and publish the router last.
 
+The production showcase sets `DISABLE_PUBLIC_SIGNUPS=true`. The backend rejects password and OAuth
+account creation, and the frontend removes the signup link and redirects `/signup` to login.
+Existing accounts can still sign in.
+
 ## Local validation or deployment
 
 With the same environment values available locally:
@@ -31,6 +35,17 @@ With the same environment values available locally:
 ```sh
 pnpm showcase:deploy -- --dry-run
 pnpm showcase:deploy
+```
+
+Set the backend's `ACCOUNT_PROVISIONING_TOKEN` with Wrangler once. To create an account while public
+signups are closed, keep that token local and pass the new password over stdin:
+
+```sh
+read -rs 'PASSWORD?Senha da nova conta: '
+printf '\n'
+printf '%s' "$PASSWORD" | ACCOUNT_PROVISIONING_TOKEN='<token local>' \
+  pnpm account:create -- --username usuario --display-name 'Nome do usuário'
+unset PASSWORD
 ```
 
 The showcase uses the built-in username/password flow and BYOK models. Users can add an OpenRouter

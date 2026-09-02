@@ -76,6 +76,7 @@ test("backend and gatekeepers use the custom origin and persistent service names
   const backend = configs.get("workshop-backend");
   assert.ok(backend);
   assert.equal(backend.vars?.PUBLIC_BASE_URL, origin);
+  assert.equal(backend.vars?.DISABLE_PUBLIC_SIGNUPS, "true");
   assert.deepEqual(backend.ai, { binding: "WORKERS_AI" });
 
   const gatekeepers = packages.filter(pkg => isGatekeeperPackage(pkg.name));
