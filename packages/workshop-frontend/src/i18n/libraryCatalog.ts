@@ -42,6 +42,12 @@ export const libraryEn = {
         },
       },
     },
+    outputFormats: {
+      startWith: 'Start with',
+      creating: 'Creating…',
+      newFormat: 'New {{format}}',
+      createFailed: "Couldn't create a new {{format}}",
+    },
     workspaces: {
       title: 'Workspaces',
       description: 'Each workspace is an isolated environment with its own conversations, gatekeepers, and outputs.',
@@ -439,9 +445,9 @@ export const libraryPtBR = {
       getStarted: 'Comece agora',
       suggestions: {
         oneOnOne: {
-          label: 'Escrever um pré-read de 1:1',
+          label: 'Preparar material para um 1:1',
           description: 'Um documento com panorama, pontos para investigar e um pedido',
-          prompt: 'Crie um documento para preparar meu próximo 1:1 com uma pessoa do meu time: um panorama atual, uma estrutura de coaching, pontos para investigar, itens pendentes da última conversa e um pedido claro.',
+          prompt: 'Crie um documento para preparar meu próximo 1:1 com uma pessoa do meu time: um panorama atual, um roteiro de orientação, pontos para investigar, itens pendentes da última conversa e um pedido claro.',
         },
         teamMeeting: {
           label: 'Montar uma apresentação de reunião do time',
@@ -449,7 +455,7 @@ export const libraryPtBR = {
           prompt: 'Crie uma apresentação de slides para minha próxima reunião de time: situação atual, o que foi entregue, riscos e bloqueios e as decisões que preciso do grupo. Primeiro, pergunte no que o time está trabalhando.',
         },
         insights: {
-          label: 'Encontrar insights nos meus dados',
+          label: 'Analisar meus dados',
           description: 'Transformar uma planilha ou CSV em tendências e recomendações',
           prompt: 'Transforme um conjunto de dados que vou compartilhar (uma planilha, CSV ou tabela colada) em uma análise narrativa: principais tendências, anomalias, o "e daí?" e recomendações concretas.',
         },
@@ -460,10 +466,16 @@ export const libraryPtBR = {
         },
         app: {
           label: 'Criar uma ferramenta rápida',
-          description: 'Um app interativo pequeno, calculadora ou dashboard',
-          prompt: 'Crie uma ferramenta interativa pequena que eu possa usar aqui — uma calculadora, dashboard ou explorador. Pergunte o que ela deve fazer e depois crie-a.',
+          description: 'Um aplicativo interativo pequeno, calculadora ou painel',
+          prompt: 'Crie uma ferramenta interativa pequena que eu possa usar aqui — uma calculadora, painel ou explorador. Pergunte o que ela deve fazer e depois crie-a.',
         },
       },
+    },
+    outputFormats: {
+      startWith: 'Comece com',
+      creating: 'Criando…',
+      newFormat: 'Novo {{format}}',
+      createFailed: 'Não foi possível criar um novo {{format}}',
     },
     workspaces: {
       title: 'Espaços de trabalho',

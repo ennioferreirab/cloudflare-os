@@ -34,6 +34,11 @@ export function slashCommandKey(id: SlashCommandId): string {
   return `${id.builtin === true ? "builtin" : id.gatekeeperId}:${id.commandId}`;
 }
 
+/** Whether a command is the Workshop's built-in compaction command. */
+export function isBuiltInCompactCommand(choice: Pick<SlashCommandChoice, "selection">): boolean {
+  return choice.selection.builtin === true && choice.selection.commandId === "compact";
+}
+
 /**
  * Looks up a command a message was sent with. Names aren't unique across providers, so this matches
  * on the full id. Resolves to undefined for a command whose provider is gone, which is why callers

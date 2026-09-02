@@ -98,7 +98,7 @@ import {
   ComposerMirror, composerTextareaClass, type ComposerMirrorHandle, type MirrorToken,
 } from "./components/chat/ComposerMirror";
 import {
-  slashCommandKey, useSlashCommandChoice, type OverseerSource,
+  isBuiltInCompactCommand, slashCommandKey, useSlashCommandChoice, type OverseerSource,
 } from "./components/chat/slash-command-catalog";
 import {
   removeComposerToken, snapCaretOutOfRanges, spliceComposerToken, type ComposerRange,
@@ -112,6 +112,7 @@ import { FormatMiniature } from "./components/format/FormatVisuals";
 import { formatIconDataUrl } from "./components/format/formatIconImage";
 import { locateMessageFormatRefs } from "./components/format/messageFormatRefs";
 import ComposerFormatMenuItems from "./components/format/ComposerFormatMenuItems";
+import { localizeOutputFormatOffer } from "./components/format/localizedFormats";
 import { HookToggle } from "./components/HookToggle";
 import { handlePickerKeyDown } from "./pickerNavigation";
 import { normalizeResourceUrl } from "./resourceMatching";
@@ -1160,6 +1161,7 @@ function SlashCommandMention(
     getOverseer: OverseerSource;
   },
 ) {
+  const { t } = useLocale();
   const choice = useSlashCommandChoice(getOverseer, name ? id : undefined);
   const mention = name ? <span className="text-kumo-brand">/{name}</span> : null;
   const command = choice
@@ -1172,7 +1174,11 @@ function SlashCommandMention(
                 the *inherited* line height, so without one the reserved box and the rendered
                 lines disagree and the last line is sliced through the middle. Two lines rather
                 than three keeps the whole tooltip inside its own height budget. */}
-            <span className="line-clamp-2 leading-[18px]">{choice.description}</span>
+            <span className="line-clamp-2 leading-[18px]">
+              {isBuiltInCompactCommand(choice)
+                ? t('workspace.chat.compactDescription')
+                : choice.description}
+            </span>
             {/* Provider, then whatever identifies the command within it: for a skill that is
                 its collection and path. Same line the picker shows. */}
             <span className="mt-0.5 block truncate text-kumo-subtle">
@@ -1992,7 +1998,7 @@ export const ChatInput = ({
   /** Called after a gatekeeper is connected via the attach flow, so the parent can refresh the
    * pre-approval catalog and proactively offer to pre-approve its actions. */
 }) => {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const translateRef = useRef(t);
   translateRef.current = t;
   const toasts = useKumoToastManager();
@@ -3218,14 +3224,15 @@ export const ChatInput = ({
 
   // Inserted at the caret, like a capsule, so the noun lands in the sentence that needs it.
   const chooseFormat = async (format: OutputFormatOffer) => {
-    const logo = await formatIconDataUrl(format.output.icon);
+    const localizedFormat = localizeOutputFormatOffer(format, locale);
+    const logo = await formatIconDataUrl(localizedFormat.output.icon);
     const value = inputValueRef.current;
     // The menu takes focus, but the textarea keeps its last selection; falling back to the end is
     // right for the case where it was never focused at all.
     const caret = Math.min(composerTextareaRef.current?.selectionStart ?? value.length, value.length);
     const at = snapCaretOutOfRanges(caret, currentTokenRanges(), "nearest");
     const splice = spliceComposerToken(
-        value, at, at, (logo ? CAPSULE_LOGO_SLOT : "") + format.output.noun);
+        value, at, at, (logo ? CAPSULE_LOGO_SLOT : "") + localizedFormat.output.noun);
     setInputValue(splice.value);
     setCapsules(previous => previous.map(capsule => capsule.start >= at
       ? {...capsule, start: capsule.start + splice.delta}
@@ -3236,8 +3243,8 @@ export const ChatInput = ({
         ? {...token, start: token.start + splice.delta}
         : token),
       {
-        noun: format.output.noun,
-        icon: format.output.icon,
+        noun: localizedFormat.output.noun,
+        icon: localizedFormat.output.icon,
         logo,
         start: splice.start,
         length: splice.length,

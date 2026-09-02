@@ -37,6 +37,7 @@ import { useSiteName } from './ServerConfigContext'
 import { AccountsSubscriberAdapter } from './accountsSubscriber'
 import { useDialogSelectPortalContainer } from './useDialogSelectPortalContainer'
 import { useLocale } from './i18n'
+import { localizeGatekeeperPresentation } from './localizedGatekeepers'
 
 export interface GatekeeperModalProps {
   open: boolean
@@ -253,11 +254,21 @@ export default function GatekeeperModal({
   }, [])
 
   const siteName = useSiteName()
+  const localizedVendors = useMemo(() => vendors.map(vendor => ({
+    ...vendor,
+    ...localizeGatekeeperPresentation(
+      vendor.id,
+      vendor.description,
+      vendor.supportedResources,
+      siteName,
+      t,
+    ),
+  })), [siteName, t, vendors])
   const allConnections = useMemo(() => [
     ...platformConnectionTypes(siteName, t),
-    ...vendors.flatMap(vendor => vendor.supportedResources
+    ...localizedVendors.flatMap(vendor => vendor.supportedResources
       .map(resource => connectionForResource(vendor, resource))),
-  ], [siteName, vendors, t])
+  ], [localizedVendors, siteName, t])
 
   const selectedConnection = useMemo(
     () => allConnections.find(connection => connection.id === selectedConnectionId) ?? null,
@@ -495,8 +506,23 @@ export default function GatekeeperModal({
 
   const matchingAccounts = useMemo(() => {
     if (!selectedConnection?.vendorId) return []
-    return accounts.filter(account => accountSupportsConnection(account, selectedConnection))
-  }, [accounts, selectedConnection])
+    return accounts
+      .filter(account => accountSupportsConnection(account, selectedConnection))
+      .map(account => {
+        const localized = localizeGatekeeperPresentation(
+          account.vendorId,
+          account.vendorDescription,
+          account.supportedResources,
+          siteName,
+          t,
+        )
+        return {
+          ...account,
+          vendorDescription: localized.description,
+          supportedResources: localized.supportedResources,
+        }
+      })
+  }, [accounts, selectedConnection, siteName, t])
 
   const selectedAccount = matchingAccounts.find(
     account => account.id === selectedAccountId && account.credentialsValid,

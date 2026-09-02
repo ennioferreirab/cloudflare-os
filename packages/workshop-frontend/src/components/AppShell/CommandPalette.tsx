@@ -11,6 +11,7 @@ import { useAuthenticatedApi } from '../../AuthContext'
 import type { GadgetMetadataWithTimestamps, OutputFormatOffer } from '@gadgets/workshop-shared/api'
 import { FormatGlyph } from '../format/FormatVisuals'
 import { createFromFormat } from '../format/useOutputFormats'
+import { localizeOutputFormatOffer } from '../format/localizedFormats'
 import { isImeComposing } from '../../keyboardEvent'
 import { useLocale } from '../../i18n'
 
@@ -143,7 +144,7 @@ export default function CommandPalette({
   open: boolean
   onClose: () => void
 }) {
-  const { t } = useLocale()
+  const { locale, t } = useLocale()
   const { authenticatedApi } = useAuthenticatedApi()
   const navigate = useNavigate()
   const toasts = useKumoToastManager()
@@ -218,9 +219,17 @@ export default function CommandPalette({
 
   // Picking a format here behaves as it does anywhere else; see createFromFormat.
   const createFormat = useCallback(
-    (format: OutputFormatOffer) =>
-      createFromFormat(authenticatedApi, navigate, toasts, format).catch(() => {}),
-    [authenticatedApi, navigate, toasts],
+    (rawFormat: OutputFormatOffer) => {
+      const format = localizeOutputFormatOffer(rawFormat, locale)
+      return createFromFormat(
+        authenticatedApi,
+        navigate,
+        toasts,
+        format,
+        t('library.outputFormats.createFailed', { format: format.output.noun }),
+      ).catch(() => {})
+    },
+    [authenticatedApi, locale, navigate, t, toasts],
   )
 
   const { groups, flat } = useMemo(() => {
@@ -229,13 +238,16 @@ export default function CommandPalette({
 
     // One entry per standard format. "New workspace" remains the first action because it is the
     // general starting point; the format shortcuts follow it in the admin's configured order.
-    const formatCommands: Command[] = formats.map((format) => ({
-      id: `format-${format.blueprintId}`,
-      label: t('library.commandPalette.newPrefix', { format: format.output.noun }),
-      hint: t('library.commandPalette.format'),
-      icon: <FormatGlyph output={format.output} size="md" />,
-      run: () => { void createFormat(format) },
-    }))
+    const formatCommands: Command[] = formats.map((rawFormat) => {
+      const format = localizeOutputFormatOffer(rawFormat, locale)
+      return {
+        id: `format-${format.blueprintId}`,
+        label: t('library.commandPalette.newPrefix', { format: format.output.noun }),
+        hint: t('library.commandPalette.format'),
+        icon: <FormatGlyph output={format.output} size="md" />,
+        run: () => { void createFormat(format) },
+      }
+    })
 
     const nav: Command[] = [
       {
@@ -306,7 +318,7 @@ export default function CommandPalette({
     const groups = built.filter((g) => g.items.length > 0)
     const flat = groups.flatMap((g) => g.items)
     return { groups, flat }
-  }, [query, gadgets, blueprints, formats, navigate, createFormat, t])
+  }, [query, gadgets, blueprints, formats, locale, navigate, createFormat, t])
 
   // Keep the active index in range as the result set changes.
   useEffect(() => {

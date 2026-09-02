@@ -1,12 +1,14 @@
 // Loading and instantiating the deployment's standard output formats. Shared by every surface that
 // offers them, so "what happens when you pick a format" is decided once.
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useKumoToastManager } from '@cloudflare/kumo'
 import type { RpcStub } from 'capnweb'
 import type { Overseer, OutputFormatOffer } from '@gadgets/workshop-shared/api'
 import { useAuthenticatedApi } from '../../AuthContext'
+import { useLocale } from '../../i18n'
+import { localizeOutputFormatOffer } from './localizedFormats'
 
 type AuthenticatedApiStub = ReturnType<typeof useAuthenticatedApi>['authenticatedApi']
 type Navigate = ReturnType<typeof useNavigate>
@@ -54,6 +56,7 @@ export async function createFromFormat(
   navigate: Navigate,
   toasts: Toasts,
   format: OutputFormatOffer,
+  failureTitle: string,
 ): Promise<void> {
   if (format.requiresSetup) {
     navigate({ to: '/blueprint/$id', params: { id: format.blueprintId } })
@@ -70,7 +73,7 @@ export async function createFromFormat(
     navigate({ to: '/workspace/$id', params: { id } })
   } catch (err) {
     console.error('Failed to create from format:', err)
-    toasts.add({ title: `Couldn't create a new ${format.output.noun}`, variant: 'error' })
+    toasts.add({ title: failureTitle, variant: 'error' })
     throw err
   } finally {
     overseer?.[Symbol.dispose]()
@@ -79,16 +82,17 @@ export async function createFromFormat(
 
 export function useOutputFormats(): OutputFormats {
   const { authenticatedApi } = useAuthenticatedApi()
+  const { locale, t } = useLocale()
   const navigate = useNavigate()
   const toasts = useKumoToastManager()
-  const [formats, setFormats] = useState<OutputFormatOffer[]>([])
+  const [rawFormats, setRawFormats] = useState<OutputFormatOffer[]>([])
   const [creating, setCreating] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     loadOutputFormats(authenticatedApi)
       .then((list) => {
-        if (!cancelled) setFormats(list)
+        if (!cancelled) setRawFormats(list)
       })
       .catch((err) => {
         // Nothing else depends on this, so a failure is a missing shortcut, not an error.
@@ -99,16 +103,27 @@ export function useOutputFormats(): OutputFormats {
     }
   }, [authenticatedApi])
 
+  const formats = useMemo(
+    () => rawFormats.map(format => localizeOutputFormatOffer(format, locale)),
+    [locale, rawFormats],
+  )
+
   const create = useCallback(async (format: OutputFormatOffer) => {
     setCreating(format.blueprintId)
     try {
-      await createFromFormat(authenticatedApi, navigate, toasts, format)
+      await createFromFormat(
+        authenticatedApi,
+        navigate,
+        toasts,
+        format,
+        t('library.outputFormats.createFailed', { format: format.output.noun }),
+      )
     } catch {
       // Already reported; clear the busy state so the row can be retried. On success the component
       // is navigating away, so it stays busy.
       setCreating(null)
     }
-  }, [authenticatedApi, navigate, toasts])
+  }, [authenticatedApi, navigate, t, toasts])
 
   return { formats, creating, create }
 }

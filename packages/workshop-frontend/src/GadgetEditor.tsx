@@ -146,12 +146,12 @@ class WorkpiecesSubscriberImpl extends RpcTarget implements WorkpiecesSubscriber
   }
 }
 
-function formatConsoleLogs(logs: BufferedLogEntry[]): string {
+function formatConsoleLogs(logs: BufferedLogEntry[], heading: string): string {
   const lines = logs.map(log => {
     const parts = log.message.map(p => (typeof p === 'string' ? p : JSON.stringify(p)))
     return `[${log.source} ${log.level}] ${parts.join(' ')}`
   })
-  return 'Console logs:\n' + lines.join('\n')
+  return heading + '\n' + lines.join('\n')
 }
 
 // ─── right-panel tabs ─────────────────────────────────────────────────────────
@@ -856,8 +856,8 @@ export default function GadgetEditor() {
     const logs = consoleLogBufferRef.current
     consoleLogBufferRef.current = []
     setConsoleLogCount(0)
-    return formatConsoleLogs(logs)
-  }, [])
+    return formatConsoleLogs(logs, t('workspace.chat.consoleLogs'))
+  }, [t])
 
   const discardConsoleLogs = useCallback(() => {
     consoleLogBufferRef.current = []
@@ -1676,7 +1676,12 @@ export default function GadgetEditor() {
                   onStreamingActiveFileChange={handleStreamingActiveFileChange}
                   pendingConsoleLogCount={consoleLogCount}
                   consoleLogPreview={
-                    consoleLogCount > 0 ? formatConsoleLogs(consoleLogBufferRef.current) : ''
+                    consoleLogCount > 0
+                      ? formatConsoleLogs(
+                          consoleLogBufferRef.current,
+                          t('workspace.chat.consoleLogs'),
+                        )
+                      : ''
                   }
                   consoleLogSeverity={
                     consoleLogBufferRef.current.some(l => l.level === 'error')

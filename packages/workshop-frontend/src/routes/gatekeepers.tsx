@@ -25,6 +25,7 @@ import { useDocumentTitle } from '../useDocumentTitle'
 import { useSiteName } from '../ServerConfigContext'
 import { AccountsSubscriberAdapter } from '../accountsSubscriber'
 import { useLocale } from '../i18n'
+import { localizeGatekeeperPresentation } from '../localizedGatekeepers'
 
 export const Route = createFileRoute('/gatekeepers')({
   component: ConnectorsPage,
@@ -44,17 +45,6 @@ interface VendorEntry {
   description: VendorDescription
   supportedResources: SupportedResource[]
 }
-
-const GOOGLE_RESOURCE_COPY_KEYS = {
-  'Gmail Mailbox': 'gmail',
-  'Google Doc': 'doc',
-  'Google Spreadsheet': 'spreadsheet',
-  'Google Calendar': 'calendar',
-  'Google Drive Account': 'driveAccount',
-  'Google Workspace Shared Drive': 'sharedDrive',
-  'Google Drive File': 'driveFile',
-  BigQuery: 'bigQuery',
-} as const
 
 function VendorIconTile({
   logoUrl,
@@ -464,26 +454,14 @@ function ConnectorsPage() {
   const siteName = useSiteName()
 
   const localizeVendor = (vendor: VendorEntry): VendorEntry => {
-    if (vendor.id !== 'google') return vendor
-    return {
-      ...vendor,
-      description: {
-        ...vendor.description,
-        tagline: t('connections.google.tagline'),
-        description: t('connections.google.description', { siteName }),
-      },
-      supportedResources: vendor.supportedResources.map((resource) => {
-        const copyKey = GOOGLE_RESOURCE_COPY_KEYS[
-          resource.title as keyof typeof GOOGLE_RESOURCE_COPY_KEYS
-        ]
-        if (!copyKey) return resource
-        return {
-          ...resource,
-          title: t(`connections.google.resources.${copyKey}.title`),
-          description: t(`connections.google.resources.${copyKey}.description`),
-        }
-      }),
-    }
+    const localized = localizeGatekeeperPresentation(
+      vendor.id,
+      vendor.description,
+      vendor.supportedResources,
+      siteName,
+      t,
+    )
+    return { ...vendor, ...localized }
   }
 
   const { authenticatedApi } = useAuthenticatedApi()

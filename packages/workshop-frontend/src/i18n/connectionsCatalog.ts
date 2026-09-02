@@ -460,7 +460,7 @@ const ptBR = {
       tagline: 'Rascunhe respostas, edite documentos, leia planilhas, pesquise no Drive, gerencie calendários e analise dados',
       description: 'Conecte sua conta Google para dar ao {{siteName}} acesso ao Gmail, Google Docs, Google Sheets, Google Drive, Google Agenda e BigQuery. Crie agentes que organizam e-mails, rascunham e editam documentos, leem planilhas, pesquisam no Drive e leem Docs e Sheets nativos, encontram horários de foco, agendam reuniões ou executam consultas analíticas nos seus dados.',
       resources: {
-        gmail: { title: 'Caixa de entrada do Gmail', description: 'Leia e-mails e, após aprovação, envie ou gerencie mensagens, rascunhos e marcadores.' },
+        gmail: { title: 'Caixa de correio do Gmail', description: 'Leia e-mails e, após aprovação, envie ou gerencie mensagens, rascunhos e marcadores.' },
         doc: { title: 'Documento Google', description: 'Leia e edite os documentos que você escolher.' },
         spreadsheet: { title: 'Planilha Google', description: 'Leia valores de uma planilha que você escolher.' },
         calendar: { title: 'Google Agenda', description: 'Leia e gerencie uma agenda do Google.' },
