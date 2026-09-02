@@ -103,7 +103,7 @@ describe("hidden portal server boundaries", () => {
     const { user } = makeSubject();
 
     await expect(user.getGatekeeperClassFor(`${ENDPOINT}#server=jira`))
-      .rejects.toThrow(/does not match this connection's resource type/);
+      .rejects.toThrow(/available through its native connector instead/);
     expect(mocks.withClient).not.toHaveBeenCalled();
   });
 
