@@ -250,6 +250,7 @@ const en = {
         taglineConfigured: 'Connect a server behind {{host}}',
         taglineUnavailable: 'No MCP server portal is configured',
         description: 'Use the MCP servers this organization has approved, through its MCP server portal. Reads happen straight away. Anything that writes waits for your approval.',
+        resourceDescription: 'Tools from this approved MCP server. Writes need approval.',
       },
       notion: {
         tagline: 'Read and write your Notion pages and databases',
@@ -557,6 +558,7 @@ const ptBR = {
         taglineConfigured: 'Conecte um servidor por trás de {{host}}',
         taglineUnavailable: 'Nenhum portal de servidor MCP está configurado',
         description: 'Use os servidores MCP aprovados pela sua organização por meio do portal MCP. Leituras acontecem imediatamente; qualquer operação de escrita aguarda sua aprovação.',
+        resourceDescription: 'Ferramentas deste servidor MCP aprovado. Operações de escrita exigem sua aprovação.',
       },
       notion: {
         tagline: 'Leia e edite suas páginas e bancos de dados do Notion',

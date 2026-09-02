@@ -23,6 +23,7 @@ const VENDOR_COPY_KEYS = {
   linear: 'linear',
   mcp: 'mcp',
   'mcp-portal': 'mcpPortal',
+  mcp_portal: 'mcpPortal',
   notion: 'notion',
   scheduler: 'scheduler',
   slack: 'slack',
@@ -65,7 +66,8 @@ export function localizeGatekeeperPresentation(
   if (!copyKey) return { description, supportedResources }
 
   const vendorPath = `connections.vendors.${copyKey}`
-  const tagline = normalizedVendorId === 'mcp-portal'
+  const isMcpPortal = copyKey === 'mcpPortal'
+  const tagline = isMcpPortal
     ? description.tagline?.startsWith('Connect a server behind ')
       ? t(`${vendorPath}.taglineConfigured`, {
         host: description.tagline.slice('Connect a server behind '.length),
@@ -82,6 +84,11 @@ export function localizeGatekeeperPresentation(
       tagline,
       description: t(`${vendorPath}.description`),
     },
-    supportedResources,
+    supportedResources: isMcpPortal
+      ? supportedResources.map(resource => ({
+        ...resource,
+        description: t(`${vendorPath}.resourceDescription`),
+      }))
+      : supportedResources,
   }
 }

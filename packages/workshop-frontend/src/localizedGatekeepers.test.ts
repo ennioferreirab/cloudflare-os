@@ -41,6 +41,7 @@ const translations: Record<string, string> = {
   'connections.vendors.github.description': 'Conecte o GitHub ao ScaleOS.',
   'connections.vendors.mcpPortal.taglineConfigured': 'Conecte um servidor por trás de example.com',
   'connections.vendors.mcpPortal.description': 'Use os servidores MCP aprovados.',
+  'connections.vendors.mcpPortal.resourceDescription': 'Ferramentas deste servidor MCP aprovado.',
   'connections.vendors.scheduler.displayName': 'Tarefas Agendadas',
 }
 
@@ -84,11 +85,27 @@ describe('localizeGatekeeperPresentation', () => {
     expect(result).toEqual({ description: google, supportedResources: resources })
   })
 
-  it('keeps the configured MCP portal host while translating its copy', () => {
-    const result = localizeGatekeeperPresentation('mcp-portal', mcpPortal, [], 'ScaleOS', t)
+  it('localizes the configured MCP portal and its resource using the binding vendor id', () => {
+    const portalResources: SupportedResource[] = [{
+      title: 'ScaleOS Vault',
+      description: 'Tools from the servers behind this portal. Writes need approval.',
+      urlPattern: 'https://vault.scaleos.pro/*',
+    }]
+    const result = localizeGatekeeperPresentation(
+      'mcp_portal',
+      mcpPortal,
+      portalResources,
+      'ScaleOS',
+      t,
+    )
     expect(result.description).toMatchObject({
       tagline: 'Conecte um servidor por trás de example.com',
       description: 'Use os servidores MCP aprovados.',
+    })
+    expect(result.supportedResources[0]).toEqual({
+      title: 'ScaleOS Vault',
+      description: 'Ferramentas deste servidor MCP aprovado.',
+      urlPattern: 'https://vault.scaleos.pro/*',
     })
   })
 
