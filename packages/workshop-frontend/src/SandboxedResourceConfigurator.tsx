@@ -310,7 +310,7 @@ export default function SandboxedResourceConfigurator({
     return () => {
       onCollectResourceUrlChange?.(null)
     }
-  }, [onCollectResourceUrlChange])
+  }, [onCollectResourceUrlChange, t])
 
   useEffect(() => {
     if (iframeConnectedRef.current) iframeRpcRef.current?.updateLocale(locale)

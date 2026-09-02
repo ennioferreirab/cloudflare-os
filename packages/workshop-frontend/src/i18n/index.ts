@@ -64,6 +64,25 @@ function currentLocale(): Locale {
       : DEFAULT_LOCALE
 }
 
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>()
+
+function dateTimeFormatterKey(locale: Locale, options: Intl.DateTimeFormatOptions | undefined): string {
+  const entries = Object.entries(options ?? {})
+    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .map(([key, value]) => [key, typeof value, value])
+  return `${locale}:${JSON.stringify(entries)}`
+}
+
+function getDateTimeFormatter(locale: Locale, options: Intl.DateTimeFormatOptions | undefined): Intl.DateTimeFormat {
+  const key = dateTimeFormatterKey(locale, options)
+  let formatter = dateTimeFormatters.get(key)
+  if (formatter === undefined) {
+    formatter = new Intl.DateTimeFormat(locale, options)
+    dateTimeFormatters.set(key, formatter)
+  }
+  return formatter
+}
+
 /** Applies a locale to the document for assistive technology and browser behavior. */
 export function applyDocumentLocale(locale: Locale) {
   if (typeof document !== 'undefined') document.documentElement.lang = locale
@@ -110,7 +129,7 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions,
   locale: Locale = currentLocale(),
 ): string {
-  return new Intl.DateTimeFormat(locale, options).format(value)
+  return getDateTimeFormatter(locale, options).format(value)
 }
 
 /** Formats a number using the active locale unless an explicit locale is supplied. */

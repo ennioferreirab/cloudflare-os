@@ -54,4 +54,21 @@ describe('explicit locale formatters', () => {
     expect(formatRelativeTime(-1, 'day', { numeric: 'auto' }, 'pt-BR')).toBe('ontem')
     expect(formatList(['Gmail', 'Drive'], undefined, 'pt-BR')).toBe('Gmail e Drive')
   })
+
+  it('reuses date formatters with equivalent options in the same locale', () => {
+    const NativeDateTimeFormat = Intl.DateTimeFormat
+    const dateTimeFormat = vi.spyOn(Intl, 'DateTimeFormat').mockImplementation(
+      function DateTimeFormat(locale, options) {
+        return new NativeDateTimeFormat(locale, options)
+      },
+    )
+    const date = new Date(Date.UTC(2026, 8, 1, 12))
+
+    formatDate(date, { dateStyle: 'full', timeZone: 'UTC' }, 'en')
+    formatDate(date, { timeZone: 'UTC', dateStyle: 'full' }, 'en')
+    expect(dateTimeFormat).toHaveBeenCalledTimes(1)
+
+    formatDate(date, { dateStyle: 'full', timeZone: 'UTC' }, 'pt-BR')
+    expect(dateTimeFormat).toHaveBeenCalledTimes(2)
+  })
 })
