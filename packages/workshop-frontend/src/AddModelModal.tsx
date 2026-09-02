@@ -68,7 +68,7 @@ function decodeSelection(value: string): SelectionType {
   return { type: 'suggested', provider, modelId, displayName }
 }
 
-// Build the flat list of model options, keeping Workers AI as the final provider group.
+// Build the flat list with OpenRouter first and Workers AI last.
 function buildOptions(
   gatewayMode: boolean,
   enabledProviders: Set<string> | null,
@@ -76,7 +76,9 @@ function buildOptions(
 ) {
   const options: { value: string; label: string; provider: string }[] = []
   const providerOrder = (Object.keys(SUGGESTED_MODELS) as AiModelProvider[])
-    .toSorted((left, right) => Number(left === 'cloudflare') - Number(right === 'cloudflare'))
+    .toSorted((left, right) =>
+      Number(right === 'openrouter') - Number(left === 'openrouter')
+      || Number(left === 'cloudflare') - Number(right === 'cloudflare'))
 
   for (const provider of providerOrder) {
     if (enabledProviders && !enabledProviders.has(provider)) continue
