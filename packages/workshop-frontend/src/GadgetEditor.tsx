@@ -572,8 +572,8 @@ export default function GadgetEditor() {
   // Auto-dismiss the hint a few seconds after entering fullscreen.
   useEffect(() => {
     if (!showFullscreenHint) return
-    const t = setTimeout(() => setShowFullscreenHint(false), 4000)
-    return () => clearTimeout(t)
+    const timeoutId = setTimeout(() => setShowFullscreenHint(false), 4000)
+    return () => clearTimeout(timeoutId)
   }, [showFullscreenHint])
 
   // Move focus into the overlay when entering fullscreen, and back to the prior element on exit.
@@ -1258,7 +1258,7 @@ export default function GadgetEditor() {
     // that actually owns the preview should invalidate the iframe; chatId changes themselves
     // remount GadgetUISession when entering or leaving a preview.
     if (previewChatId !== undefined && chatChanges?.chatId === previewChatId) {
-      setUiReloadTrigger(t => t + 1)
+      setUiReloadTrigger(value => value + 1)
     }
   }, [previewChatId, chatChanges])
 
@@ -1690,7 +1690,7 @@ export default function GadgetEditor() {
                   constrainChatWidth
                   onChatCountChange={handleChatCountChange}
                   onAgentActiveChange={handleAgentActiveChange}
-                  onAutoApproveChange={() => setAutoApproveReloadTrigger(t => t + 1)}
+                  onAutoApproveChange={() => setAutoApproveReloadTrigger(value => value + 1)}
                   onHasAnyCodeChange={setHasAnyProposedChanges}
                   onSelectedChatHasProposedChangesChange={setSelectedChatHasProposedChanges}
                   onOpenGadget={handleSelectWorkpiece}
@@ -1830,7 +1830,7 @@ export default function GadgetEditor() {
                   overseer={overseer.stub}
                   view={activityView}
                   onViewChange={setActivityView}
-                  onAutoApproveChange={() => setAutoApproveReloadTrigger(t => t + 1)}
+                  onAutoApproveChange={() => setAutoApproveReloadTrigger(value => value + 1)}
                   autoApproveReloadTrigger={autoApproveReloadTrigger}
                 />
               </div>
@@ -1907,7 +1907,7 @@ export default function GadgetEditor() {
                   gadget={selectedGadgetStub}
                   chatId={effectiveSelectedChatId ?? undefined}
                   authenticatedApi={authenticatedApi}
-                  onConnectionsChange={() => setUiReloadTrigger(t => t + 1)}
+                  onConnectionsChange={() => setUiReloadTrigger(value => value + 1)}
                   isVisible={activeTab === 'connections'}
                   onHasGatekeepersChange={setHasBindings}
                 />

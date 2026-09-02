@@ -775,8 +775,8 @@ function ShowcaseStep({ active, siteName }: { active: boolean; siteName: string 
   useEffect(() => {
     if (active) {
       // Small delay so the slide transition starts before the stagger
-      const t = setTimeout(() => setRevealed(true), 150)
-      return () => clearTimeout(t)
+      const timeoutId = setTimeout(() => setRevealed(true), 150)
+      return () => clearTimeout(timeoutId)
     }
   }, [active])
 

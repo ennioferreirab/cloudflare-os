@@ -1,6 +1,6 @@
 # Plano executado: pt-BR + ScaleOS
 
-Status: concluído em 2026-09-01.
+Status: concluído em 2026-09-02.
 
 ## Fase 1 — fundação de locale
 

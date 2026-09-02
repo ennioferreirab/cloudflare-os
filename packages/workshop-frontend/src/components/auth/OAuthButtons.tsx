@@ -81,7 +81,7 @@ export default function OAuthButtons({ rpcStub, vendors, onSuccess }: OAuthButto
           if (popup.closed) finish(() => reject(new Error(t('oauth.cancelled'))))
         }, 500)
         attempt.wait()
-          .then(t => finish(() => resolve(t)))
+          .then(authToken => finish(() => resolve(authToken)))
           .catch(e => finish(() => reject(e instanceof Error ? e : new Error(t('oauth.failed')))))
       })
       if (!mountedRef.current) return  // user navigated away mid-flow; drop the result

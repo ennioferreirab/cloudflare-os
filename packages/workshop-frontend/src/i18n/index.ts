@@ -68,7 +68,7 @@ const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>()
 
 function dateTimeFormatterKey(locale: Locale, options: Intl.DateTimeFormatOptions | undefined): string {
   const entries = Object.entries(options ?? {})
-    .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
+    .toSorted(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
     .map(([key, value]) => [key, typeof value, value])
   return `${locale}:${JSON.stringify(entries)}`
 }

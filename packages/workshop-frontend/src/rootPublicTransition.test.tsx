@@ -26,15 +26,15 @@ vi.mock("./useAuth", () => ({
     authenticatedApi: null,
     isLoading: false,
     error: null,
-    logout: vi.fn(),
-    login: vi.fn(),
+    logout: vi.fn<() => void>(),
+    login: vi.fn<(token: string) => void>(),
   }),
 }));
 
 vi.mock("@cloudflare/kumo", () => ({
   TooltipProvider: ({ children }: { children: React.ReactNode }) => children,
   Toasty: ({ children }: { children: React.ReactNode }) => children,
-  useKumoToastManager: () => ({ add: vi.fn() }),
+  useKumoToastManager: () => ({ add: vi.fn<(toast: unknown) => void>() }),
 }));
 
 vi.mock("./components/Header", () => ({ default: () => null }));
@@ -50,6 +50,8 @@ vi.mock("./components/AppShell/HomeTaskSuggestions", () => ({ default: () => nul
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = () => {};
 
+function noop() {}
+
 function makeRouter() {
   const rootRoute = RootRouteImport;
   const homeComponent = lazyRouteComponent(async () => ({
@@ -61,8 +63,8 @@ function makeRouter() {
     getParentRoute: () => rootRoute,
     component: homeComponent,
   } as never);
-  let resolveSignup = () => {};
-  let markSignupStarted = () => {};
+  let resolveSignup = noop;
+  let markSignupStarted = noop;
   const signupStarted = new Promise<void>((resolve) => {
     markSignupStarted = resolve;
   });

@@ -241,7 +241,7 @@ function AppWithConnection() {
     return () => { cancelled = true; };
   }, [rpcState.stub]);
 
-  // Apply the deployment's admin-chosen accent color (overrides brand CSS vars at runtime).
+  // Keep the upstream config subscription; ScaleOS pins the root accent inside applyAccentColor.
   useEffect(() => {
     applyAccentColor(serverConfig?.accentColor ?? '');
   }, [serverConfig?.accentColor]);

@@ -1,6 +1,8 @@
-# Cloudflare OS: An AI productivity environment
+# ScaleOS: An AI productivity environment
 
-Cloudflare OS is an "operating system" for AI productivity originally developed for use inside Cloudflare. A large portion of Cloudflare's workforce -- from engineering to sales and everything in between -- uses Cloudflare OS every day to help them do their jobs.
+ScaleOS is this fork's branded, bilingual adaptation of Cloudflare OS, an "operating system" for AI productivity originally developed for use inside Cloudflare. The interface defaults to Brazilian Portuguese and keeps English available through a selector before and after sign-in. See the [localization record](docs/locate/README.md) for the delivered scope and its implementation decisions.
+
+The architecture guide below keeps upstream technical names such as Blueprint and Gatekeeper because the code and API names have not changed. The pt-BR interface presents those concepts as Playbooks and Guardiões.
 
 ![A Q3 planning workspace in Cloudflare OS, with an AI-generated slide deck](docs/images/q3-planning-workspace.png)
 
@@ -19,15 +21,13 @@ We are making Cloudflare OS open source so that others can copy it and customize
 
 ## Quick Start
 
-To quickly run Cloudflare OS locally, [install pnpm](https://pnpm.io/), then do:
+To quickly run ScaleOS locally, [install pnpm](https://pnpm.io/), then do:
 
     pnpm run-local
 
 Then visit: http://localhost:8787
 
 This runs the whole stack locally on wrangler and workerd. This is not meant for production use, but is a quick way to see what the product does.
-
-Alternatively, you can [deploy to your Cloudflare account](https://os.cloudflare.app/deploy).
 
 (More options at the end of this readme.)
 
@@ -171,25 +171,25 @@ This differs from most agent harnesses, where MCP servers are configured upfront
 
 ## Get Started
 
-### Deploy to your Cloudflare account
+### Deploy upstream Cloudflare OS to your Cloudflare account
 
-We've built an online flow that helps you deploy to your own Cloudflare account:
+The upstream online flow deploys Cloudflare OS, not the ScaleOS adaptation in this fork:
 
 https://os.cloudflare.app/deploy
 
-Or, for more sophisticated deployment, with your gatekeepers and potentially code changes, check out our deployment starter repo:
+Its deployment starter repository supports more advanced upstream deployments:
 
 https://github.com/cloudflare/cloudflare-os-starter
 
 ### Run locally
 
-To quickly run Cloudflare OS locally, [install pnpm](https://pnpm.io/), then do:
+To quickly run ScaleOS locally, [install pnpm](https://pnpm.io/), then do:
 
     pnpm run-local
 
 Then visit: http://localhost:8787
 
-This runs Cloudflare OS using `wrangler`, the Workers developer tooling CLI. This is not the right way to run the OS on a production server, but it works fine for trying it out on your local machine.
+This runs ScaleOS using `wrangler`, the Workers developer tooling CLI. This is not the right way to run the OS on a production server, but it works fine for trying it out on your local machine.
 
 Your data will be stored in a subdirectory named `.wrangler`.
 
