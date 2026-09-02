@@ -256,6 +256,7 @@ const en = {
         description: 'Connect your Notion workspace so ScaleOS can search, read, and edit the pages and databases you share. Build agents that draft documents, organize notes, or manage database records.',
       },
       scheduler: {
+        displayName: 'Scheduled Tasks',
         tagline: 'Run workspace tasks on a schedule',
         description: 'Register recurring and one-shot workspace tasks.',
       },
@@ -562,6 +563,7 @@ const ptBR = {
         description: 'Conecte seu workspace do Notion para que o ScaleOS pesquise, leia e edite as páginas e bancos de dados compartilhados. Crie agentes para rascunhar documentos, organizar notas ou gerenciar registros.',
       },
       scheduler: {
+        displayName: 'Tarefas Agendadas',
         tagline: 'Execute tarefas do espaço de trabalho em horários programados',
         description: 'Registre tarefas recorrentes e de execução única.',
       },

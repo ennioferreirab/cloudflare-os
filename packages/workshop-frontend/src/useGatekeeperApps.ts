@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { GatekeeperAppInfo } from '@gadgets/workshop-shared/api'
 import { useOptionalAuthenticatedApi } from './AuthContext'
+import { useLocale } from './i18n'
 
 // Shared per-API-stub cache of the listGatekeeperApps() request, so multiple callers in one render
 // cycle (e.g. the Header nav and the /gatekeepers/$appId page) share a single RPC instead of each
@@ -29,12 +30,13 @@ export function refreshGatekeeperApps(api: object): void {
  */
 export function useGatekeeperApps(): GatekeeperAppInfo[] {
   const auth = useOptionalAuthenticatedApi()
+  const { t } = useLocale()
   const [apps, setApps] = useState<GatekeeperAppInfo[]>([])
   // Bumped by refreshGatekeeperApps() to re-run the fetch effect after the cache is invalidated.
   const [refreshTick, setRefreshTick] = useState(0)
 
   useEffect(() => {
-    const listener = () => setRefreshTick((t) => t + 1)
+    const listener = () => setRefreshTick((tick) => tick + 1)
     refreshListeners.add(listener)
     return () => { refreshListeners.delete(listener) }
   }, [])
@@ -63,5 +65,7 @@ export function useGatekeeperApps(): GatekeeperAppInfo[] {
     }
   }, [auth, refreshTick])
 
-  return apps
+  return apps.map(app => app.id === 'scheduler'
+    ? { ...app, title: t('connections.vendors.scheduler.displayName') }
+    : app)
 }

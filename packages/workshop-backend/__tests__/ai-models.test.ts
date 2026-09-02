@@ -32,6 +32,12 @@ const WORKERS_AI_CONFIG: AiModelConfig = {
   apiToken: "ignored-in-gateway-mode",
 };
 
+const OPENROUTER_CONFIG: AiModelConfig = {
+  provider: "openrouter",
+  model: "openai/gpt-5.2",
+  apiToken: "openrouter-api-key",
+};
+
 function env(overrides: Partial<Cloudflare.Env> = {}): Cloudflare.Env {
   return {
     CF_AI_GATEWAY: "platform-gateway",
@@ -100,6 +106,28 @@ describe("getModel AI Gateway routing", () => {
       gadgetId: "gadget-123",
       chatId: 7,
     });
+  }, 15000);
+
+  it("routes OpenRouter through its provider-native gateway endpoint", async () => {
+    const handle = getModel(env({
+      CF_AI_GATEWAY_PROVIDERS: "anthropic,openai,google,openrouter",
+    }), OPENROUTER_CONFIG, INITIATOR);
+
+    expect(handle.model).toMatchObject({
+      api: "openai-completions",
+      provider: "openrouter",
+      id: "openai/gpt-5.2",
+      baseUrl:
+        "https://gateway.ai.cloudflare.com/v1/gateway-account-id/platform-gateway/openrouter",
+    });
+
+    const request = await captureRequest(handle);
+    expect(request.url).toBe(
+        "https://gateway.ai.cloudflare.com/v1/gateway-account-id/platform-gateway/" +
+        "openrouter/chat/completions");
+    expect(request.headers.get("cf-aig-authorization")).toBe("Bearer gateway-token");
+    expect(request.headers.get("authorization")).toBeNull();
+    expect((JSON.parse(request.body) as { model: string }).model).toBe("openai/gpt-5.2");
   }, 15000);
 
   it("routes Google through the gateway's google-ai-studio passthrough", () => {
@@ -440,6 +468,27 @@ describe("getModel direct routing (no gateway)", () => {
     expect(request.url).toBe(
         "https://api.cloudflare.com/client/v4/accounts/user-account-id/ai/v1/chat/completions");
     expect(request.headers.get("authorization")).toBe("Bearer user-token");
+  }, 15000);
+
+  it("uses Pi's OpenRouter adapter metadata and the configured API key", async () => {
+    const handle = getModel(
+        env({ CF_AI_GATEWAY: undefined }), OPENROUTER_CONFIG, INITIATOR);
+
+    expect(handle.model).toMatchObject({
+      api: "openai-completions",
+      provider: "openrouter",
+      id: "openai/gpt-5.2",
+      baseUrl: "https://openrouter.ai/api/v1",
+      contextWindow: 400000,
+      maxTokens: 128000,
+      compat: { thinkingFormat: "openrouter" },
+    });
+    expect(handle.aiGatewayLogRoute).toBeUndefined();
+
+    const request = await captureRequest(handle);
+    expect(request.url).toBe("https://openrouter.ai/api/v1/chat/completions");
+    expect(request.headers.get("authorization")).toBe("Bearer openrouter-api-key");
+    expect((JSON.parse(request.body) as { model: string }).model).toBe("openai/gpt-5.2");
   }, 15000);
 
   it.each([
