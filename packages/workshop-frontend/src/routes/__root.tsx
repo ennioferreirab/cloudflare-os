@@ -23,7 +23,9 @@ function RootComponent() {
   const rpcStub = useRpcStub()
   const connectionLost = useConnectionLost()
   const { isAuthenticated, authenticatedApi, isLoading, error, logout, login } = useAuth(rpcStub)
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const pathname = useRouterState({
+    select: (s) => (s.resolvedLocation ?? s.location).pathname,
+  })
   const { t } = useLocale()
 
   // Routes that don't require auth (public routes)

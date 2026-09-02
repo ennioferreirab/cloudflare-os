@@ -71,9 +71,9 @@ Também foi executado o validador do ScaleOS Design System e uma sessão ao vivo
 - nenhuma tradução de conteúdo do usuário ou dados retornados por provedores;
 - nenhuma mudança no kernel `workshop-backend`;
 - nenhum locale acoplado a `GatekeeperAppTheme`;
-- nenhum deploy, criação de fork remoto, commit ou push nesta etapa;
+- nenhum deploy de uma instância de produção;
 - dark mode não faz parte da experiência localizada atual.
 
-## Próximo passo operacional
+## Publicação
 
-Para publicar, configurar um remoto do fork, revisar o diff, criar commits por preocupação e então executar o fluxo de deploy escolhido. Essa etapa é separada da implementação e da validação local registradas aqui.
+O branch `start-cloudflare-os` foi publicado em `ennioferreirab/cloudflare-os`. O [PR #1](https://github.com/ennioferreirab/cloudflare-os/pull/1) está aberto contra a `main` desse fork, não contra o repositório upstream.
