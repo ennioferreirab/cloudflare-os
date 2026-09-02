@@ -155,7 +155,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           >
             {mobileOpen ? <X size={16} /> : <List size={16} />}
           </button>
-          <TopBarNotice />
+          {pathname !== '/' && <TopBarNotice />}
           {/* `ml-auto` rather than the container's `justify-between`: on desktop the hamburger is
               hidden, leaving this the only in-flow child, which `justify-between` would park on the
               left. */}
