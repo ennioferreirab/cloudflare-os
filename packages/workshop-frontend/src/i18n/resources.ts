@@ -254,7 +254,7 @@ const ptBR = {
     home: 'Início',
     workspaces: 'Espaços de trabalho',
     blueprints: 'Playbooks',
-    outputs: 'Resultados',
+    outputs: 'Artefatos',
     explore: 'Explorar',
     gatekeepers: 'Guardiões',
     profile: 'Perfil',

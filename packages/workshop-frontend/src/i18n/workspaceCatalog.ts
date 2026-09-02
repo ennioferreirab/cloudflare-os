@@ -414,9 +414,9 @@ export const workspacePtBR = {
       failed: 'Não foi possível exportar {{format}}',
     },
     picker: {
-      collapseOutputs: 'Recolher resultados',
-      expandOutputs: 'Expandir resultados',
-      outputs: 'Resultados',
+      collapseOutputs: 'Recolher artefatos',
+      expandOutputs: 'Expandir artefatos',
+      outputs: 'Artefatos',
       saveGadgetName: 'Salvar nome do Gadget',
       cancelRename: 'Cancelar renomeação',
       hooksEnabled: 'Hooks ativados',
