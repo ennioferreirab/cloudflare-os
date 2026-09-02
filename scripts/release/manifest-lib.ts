@@ -327,6 +327,18 @@ export function gatekeeperShortName(pkgName: string): string {
   return pkgName.slice(GATEKEEPER_PREFIX.length);
 }
 
+/**
+ * The release manifest's shortName. Deployed instances bind gatekeepers as GATEKEEPER_<SLUG> and
+ * the router recovers the path from that binding name, so a slug must survive `toUpperCase()` and
+ * back — the deploy wizard restricts it to /^[a-z][a-z0-9]*$/ and sends the manifest shortName as
+ * the install slug verbatim. Package names are not so restricted (gatekeeper-mcp-portal), so fold
+ * here. Distinct from gatekeeperShortName(), which staging/preview use with GATEKEEPER_<PKG_NAME>
+ * bindings (underscores, router maps _ -> -) where a hyphen does round-trip.
+ */
+export function releaseShortName(pkgName: string): string {
+  return gatekeeperShortName(pkgName).replace(/[^a-z0-9]/g, "");
+}
+
 /** Read a package's `deploy-inputs.json`, or undefined if it declares none. */
 export function readDeployInputs(pkgDir: string): DeployInput[] | undefined {
   const path = join(pkgDir, "deploy-inputs.json");
@@ -439,7 +451,7 @@ export function buildWorkerEntry(
     // (default entrypoint — it forwards whole HTTP requests, not vendor RPC).
     gatekeeperBindingExpansion = { propsByPackage: {} };
   } else {
-    vars.BASE_URL = `$PUBLIC_BASE_URL/gatekeeper/${gatekeeperShortName(pkgName)}`;
+    vars.BASE_URL = `$PUBLIC_BASE_URL/gatekeeper/${releaseShortName(pkgName)}`;
     installable = !NOT_INSTALLABLE.has(pkgName);
     if (installable) {
       inputs = deployInputs ??
@@ -461,7 +473,7 @@ export function buildWorkerEntry(
 
   return {
     kind,
-    ...(kind === "gatekeeper" ? { shortName: gatekeeperShortName(pkgName) } : {}),
+    ...(kind === "gatekeeper" ? { shortName: releaseShortName(pkgName) } : {}),
     installable,
     ...(PREINSTALL.has(pkgName) ? { preinstall: true } : {}),
     ...(SINGLETON.has(pkgName) ? { singleton: true } : {}),
@@ -510,8 +522,24 @@ export function generateManifest({
   assetVariants?: Record<string, CollectedAssets>;
 }): ReleaseManifest {
   const workerEntries: Record<string, WorkerEntry> = {};
+  // releaseShortName() folds the package name into the install-slug charset, and that fold is
+  // lossy: gatekeeper-foo-bar and gatekeeper-foobar both emit `foobar`. Two gatekeepers sharing a
+  // slug would want the same GATEKEEPER_FOOBAR binding and the same /gatekeeper/foobar route, so
+  // one would silently shadow the other on every customer instance. Fail the release build here —
+  // the per-entry slug check can't see the collision, only the assembled set can.
+  const shortNameOwner = new Map<string, string>();
   for (const w of workers) {
-    workerEntries[w.pkgName] = buildWorkerEntry(w);
+    const entry = buildWorkerEntry(w);
+    if (entry.shortName !== undefined) {
+      const owner = shortNameOwner.get(entry.shortName);
+      if (owner !== undefined) {
+        throw new Error(`${owner} and ${w.pkgName} both emit shortName "${entry.shortName}"; ` +
+            `install slugs must be unique (each becomes a GATEKEEPER_<SLUG> binding and a ` +
+            `/gatekeeper/<slug> route). Rename one package so the slugs differ.`);
+      }
+      shortNameOwner.set(entry.shortName, w.pkgName);
+    }
+    workerEntries[w.pkgName] = entry;
   }
 
   const assets: ReleaseManifest["assets"] = {};
