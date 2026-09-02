@@ -48,6 +48,7 @@ function renderWith(values: { accountId: string | null; workerName: string | nul
   const patches: Record<string, unknown>[] = [];
   const cleared: string[] = [];
   const tree = workerConfigurator.render({
+    locale: "en",
     values,
     setValues: patch => void patches.push(patch),
     clearFields: (...names) => void cleared.push(...names),

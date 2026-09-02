@@ -10,6 +10,7 @@ import {
   BlueprintMetadata,
 } from "@gadgets/workshop-shared/api";
 import { VendorDescription } from "@gadgets/workshop-shared/gatekeeper";
+import { useLocale } from "../i18n";
 
 const gradients = [
   "from-[#4A154B] to-[#7C3085]",
@@ -71,6 +72,7 @@ export function BindingBadge({
   badge: BindingBadgeInfo;
   vendorDescriptions?: Map<string, VendorDescription>;
 }) {
+  const { t } = useLocale();
   const vendorDescription = badge.vendorKey
     ? vendorDescriptions?.get(badge.vendorKey)
     : undefined;
@@ -96,10 +98,16 @@ export function BindingBadge({
     );
   }
 
+  const label = badge.type === "aiModel"
+    ? t('library.blueprintCard.aiModel')
+    : badge.type === "agentSpawner"
+      ? t('library.blueprintCard.agent')
+      : badge.label;
+
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-kumo-fill px-2 py-[3px] text-[11px] font-medium leading-none tracking-[-0.1px] text-kumo-subtle">
       <span className="flex items-center text-kumo-inactive">{icon}</span>
-      {vendorDescription?.displayName ?? badge.label}
+      {vendorDescription?.displayName ?? label}
     </span>
   );
 }
@@ -115,6 +123,7 @@ export function BlueprintCard({
   featured?: boolean;
   vendorDescriptions?: Map<string, VendorDescription>;
 }) {
+  const { t } = useLocale();
   const badges = uniqueBindingBadges(metadata.bindings);
 
   return (
@@ -129,7 +138,7 @@ export function BlueprintCard({
       <Link
         to="/blueprint/$id"
         params={{ id }}
-        aria-label={`Open blueprint ${metadata.title}`}
+        aria-label={t('library.blueprintCard.open', { title: metadata.title })}
         className="absolute inset-0 z-10 rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-kumo-brand"
       />
       <div className="pointer-events-none relative z-20 flex flex-1 flex-col p-4">
@@ -144,7 +153,7 @@ export function BlueprintCard({
               {metadata.title}
             </p>
             <p className={`mt-1.5 line-clamp-2 min-h-8 text-[12px] leading-4 font-normal tracking-[-0.2px] ${metadata.description ? "text-kumo-subtle" : "text-kumo-inactive italic"}`}>
-              {metadata.description || "No description"}
+              {metadata.description || t('library.blueprintCard.noDescription')}
             </p>
           </div>
         </div>

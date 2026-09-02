@@ -14,12 +14,13 @@ export default function SiteLogo({
 }) {
   const serverConfig = useServerConfig()
   const configuredUrl = serverConfig?.siteLogo?.url
-  const src = srcOverride === undefined ? configuredUrl : srcOverride ?? undefined
+  const selectedSrc = srcOverride === undefined ? configuredUrl : srcOverride ?? undefined
+  const src = selectedSrc ?? '/assets/scaleos/brand/scaleos-icon-40.png'
   const [failed, setFailed] = useState(false)
 
   useEffect(() => setFailed(false), [src, serverConfig])
 
-  if (!src || failed) return children
+  if (failed) return children
   return (
     <img
       src={src}

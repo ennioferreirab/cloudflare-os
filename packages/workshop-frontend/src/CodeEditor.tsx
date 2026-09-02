@@ -14,6 +14,7 @@ import type { FileChange, TextChange } from '@gadgets/workshop-shared/code-chang
 import { codeEditorTheme, monoFont } from './components/codeTheme'
 import { getLanguage } from './getLanguage'
 import { useTheme } from './ThemeContext'
+import { useLocale } from './i18n'
 
 // The code view's plain editor: CodeMirror 6, either read-only (the committed head view) or
 // bound to the chat's OT client through an EditSession. In-chat diff presentation lives in
@@ -108,6 +109,7 @@ export default function CodeEditor({
   filename, text = null, session, readOnly = false, height = '100%',
 }: CodeEditorProps) {
   const { resolvedThemeMode } = useTheme()
+  const { t } = useLocale()
   const hostRef = useRef<HTMLDivElement | null>(null)
   const viewRef = useRef<EditorView | null>(null)
   const themeCompartment = useRef(new Compartment())
@@ -208,7 +210,7 @@ export default function CodeEditor({
         className="flex justify-center items-center bg-kumo-base text-kumo-subtle"
         style={{ height }}
       >
-        Select a file to start editing
+        {t('misc.codeEditor.selectFile')}
       </div>
     )
   }

@@ -51,14 +51,14 @@ describe('SiteLogo', () => {
     expect(container!.querySelector('[data-fallback]')).toBeNull()
   })
 
-  it('uses the supplied fallback when no logo is configured or loading fails', () => {
+  it('uses the canonical ScaleOS logo when no deployment logo is configured', () => {
     render()
-    expect(container!.querySelector('[data-fallback]')).not.toBeNull()
+    expect(container!.querySelector('img')?.getAttribute('src'))
+      .toBe('/assets/scaleos/brand/scaleos-icon-40.png')
+    expect(container!.querySelector('[data-fallback]')).toBeNull()
+  })
 
-    act(() => root!.unmount())
-    container!.remove()
-    root = undefined
-    container = undefined
+  it('uses the supplied fallback when the selected logo fails to load', () => {
     render('/api/site-logo?v=revision')
     act(() => container!.querySelector('img')!.dispatchEvent(new Event('error')))
     expect(container!.querySelector('img')).toBeNull()
@@ -68,7 +68,7 @@ describe('SiteLogo', () => {
     expect(container!.querySelector('img')).not.toBeNull()
   })
 
-  it('uses an explicit null override for the Admin reset preview', () => {
+  it('uses the ScaleOS default for an explicit null Admin preview override', () => {
     render('/api/site-logo?v=configured')
     const config = { siteLogo: { url: '/api/site-logo?v=configured' } } as ServerConfig
     act(() => root!.render(
@@ -79,8 +79,9 @@ describe('SiteLogo', () => {
       </ServerConfigContext.Provider>,
     ))
 
-    expect(container!.querySelector('img')).toBeNull()
-    expect(container!.querySelector('[data-fallback]')).not.toBeNull()
+    expect(container!.querySelector('img')?.getAttribute('src'))
+      .toBe('/assets/scaleos/brand/scaleos-icon-40.png')
+    expect(container!.querySelector('[data-fallback]')).toBeNull()
   })
 
 })

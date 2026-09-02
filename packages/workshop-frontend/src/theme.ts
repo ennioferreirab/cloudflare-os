@@ -18,6 +18,12 @@ export type ResolvedThemeMode = 'light' | 'dark'
 
 const THEME_MODE_STORAGE_KEY = 'gadgets:theme-mode'
 
+/** ScaleOS currently defines a light product surface only; dark support stays dormant. */
+export const SCALEOS_LIGHT_ONLY = true
+
+/** Canonical ScaleOS signal colour. Deployment accent overrides are disabled in this fork. */
+export const SCALEOS_SIGNAL_COLOR = '#2351ff'
+
 function isThemeMode(value: string | null): value is ThemeMode {
   return value === 'light' || value === 'dark' || value === 'system'
 }
@@ -27,6 +33,7 @@ export function getSystemThemeMode(): ResolvedThemeMode {
 }
 
 export function readThemeMode(): ThemeMode {
+  if (SCALEOS_LIGHT_ONLY) return 'light'
   try {
     const stored = window.localStorage.getItem(THEME_MODE_STORAGE_KEY)
     return isThemeMode(stored) ? stored : 'system'
@@ -44,6 +51,7 @@ export function writeThemeMode(mode: ThemeMode): void {
 }
 
 export function resolveThemeMode(mode: ThemeMode): ResolvedThemeMode {
+  if (SCALEOS_LIGHT_ONLY) return 'light'
   return mode === 'system' ? getSystemThemeMode() : mode
 }
 
@@ -63,8 +71,11 @@ export function applyStoredThemeMode(): ResolvedThemeMode {
 
 /** Apply the accent color to the document root. Pass "" / invalid to clear back to the base theme. */
 export function applyAccentColor(color: string | null | undefined): void {
-  applyAccentColorToStyle(document.documentElement.style, color)
+  applyAccentColorToStyle(
+    document.documentElement.style,
+    SCALEOS_LIGHT_ONLY ? SCALEOS_SIGNAL_COLOR : color,
+  )
 }
 
 /** The base/default accent, shown in the admin picker when no custom color is set. */
-export const DEFAULT_ACCENT_COLOR = '#ff4801'
+export const DEFAULT_ACCENT_COLOR = SCALEOS_SIGNAL_COLOR

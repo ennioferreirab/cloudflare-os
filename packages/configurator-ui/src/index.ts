@@ -14,6 +14,8 @@ export type ConfiguratorUIRenderContext<
   TUI,
   TValues extends ConfiguratorUIValues = ConfiguratorUIValues,
 > = {
+  /** Active Workshop locale, expressed as a BCP 47 language tag such as `en` or `pt-BR`. */
+  locale: string;
   values: TValues;
   setValues(values: Partial<TValues>): void;
   clearFields(...names: (keyof TValues & string)[]): void;

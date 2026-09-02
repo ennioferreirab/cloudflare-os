@@ -13,6 +13,7 @@ import {
   slashCommandTokenKey, type ParsedSlashCommandInput,
 } from "./slash-command-input";
 import { loadSlashCommandCatalog, slashCommandKey } from "./slash-command-catalog";
+import { useLocale } from "../../i18n";
 
 type SlashCommandPopupLayout = {
   left: number;
@@ -71,6 +72,7 @@ export function useSlashCommandPicker({
    */
   chatExists: boolean;
 }) {
+  const { t } = useLocale();
   const [choices, setChoices] = useState<SlashCommandChoice[]>([]);
   const [choicesQuery, setChoicesQuery] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -231,17 +233,17 @@ export function useSlashCommandPicker({
         maxHeight: layout.maxHeight,
       }}
     >
-      <p className={`m-0 shrink-0 px-3.5 pb-1 pt-2.5 ${PICKER_CAPTION}`}>Commands</p>
+      <p className={`m-0 shrink-0 px-3.5 pb-1 pt-2.5 ${PICKER_CAPTION}`}>{t('workspace.chat.slashCommands')}</p>
       <div
         ref={listRef}
         id={listboxId}
         role="listbox"
-        aria-label="Slash commands"
+        aria-label={t('workspace.chat.slashCommandsAria')}
         aria-busy={loading}
         className="sidebar-scroll min-h-0 flex-1 overflow-y-auto"
       >
         {loading && choices.length === 0 ? (
-          <p className={PICKER_EMPTY}>Loading commands…</p>
+          <p className={PICKER_EMPTY}>{t('workspace.chat.slashCommandsLoading')}</p>
         ) : choices.length > 0 ? (
           choices.map((choice, optionIndex) => (
             <button

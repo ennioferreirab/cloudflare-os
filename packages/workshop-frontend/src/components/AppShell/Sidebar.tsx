@@ -21,6 +21,7 @@ import {
   SidebarWorkspacesLists,
 } from './SidebarWorkspaces'
 import SidebarUtilityStrip from './SidebarUtilityStrip'
+import { useLocale } from '../../i18n'
 
 /**
  * The persistent left rail. Three pinned regions sandwich a single scrolling region of lists, so
@@ -42,6 +43,7 @@ export default function Sidebar({
   onToggleCollapsed: () => void
 }) {
   const siteName = useSiteName()
+  const { t } = useLocale()
   // Gatekeeper-served management apps the user can reach now (one per gatekeeper that provides a UI
   // and is connected / enabled for everyone). Disabled or not-yet-connected ones aren't returned, so
   // they simply don't appear. The set is fully dynamic — no gatekeeper is hardcoded.
@@ -49,7 +51,7 @@ export default function Sidebar({
 
   return (
     <aside
-      aria-label="Primary"
+      aria-label={t('navigation.primary')}
       className={[
         // Sidebar is the app chrome: a hair greyer than the (lighter) content canvas so the two
         // surfaces read as distinct without a heavy divider.
@@ -66,13 +68,16 @@ export default function Sidebar({
         ].join(' ')}
       >
         <Link to="/" aria-label={siteName} className="flex min-w-0 items-center gap-2">
-          <SiteLogo size={20} className="shrink-0">
-            <Hexagon size={20} weight="bold" className="text-kumo-brand shrink-0" />
-          </SiteLogo>
-          {!collapsed && (
-            <span className="truncate text-[14px] leading-5 font-semibold tracking-[-0.25px] text-kumo-default">
-              {siteName}
-            </span>
+          {collapsed ? (
+            <SiteLogo size={20} className="shrink-0">
+              <Hexagon size={20} weight="bold" className="shrink-0 text-kumo-brand" />
+            </SiteLogo>
+          ) : (
+            <img
+              src="/assets/scaleos/brand/scaleos-lockup-nav.png"
+              alt="ScaleOS"
+              className="h-6 w-auto max-w-[130px] object-contain"
+            />
           )}
         </Link>
         {!collapsed && (
@@ -80,8 +85,8 @@ export default function Sidebar({
             <button
               type="button"
               onClick={() => openCommandPalette()}
-              aria-label="Search"
-              title="Search (⌘K)"
+              aria-label={t('navigation.search')}
+              title={t('navigation.searchWithShortcut')}
               className="press flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-kumo-inactive transition-colors hover:bg-kumo-tint hover:text-kumo-default"
             >
               <MagnifyingGlass size={15} />
@@ -89,8 +94,8 @@ export default function Sidebar({
             <button
               type="button"
               onClick={onToggleCollapsed}
-              aria-label="Collapse sidebar"
-              title="Collapse sidebar"
+              aria-label={t('navigation.collapseSidebar')}
+              title={t('navigation.collapseSidebar')}
               className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-kumo-inactive transition-colors hover:bg-kumo-tint hover:text-kumo-default"
             >
               <SidebarSimple size={15} />
@@ -104,8 +109,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={onToggleCollapsed}
-          aria-label="Expand sidebar"
-          title="Expand sidebar"
+          aria-label={t('navigation.expandSidebar')}
+          title={t('navigation.expandSidebar')}
           className="mx-auto mt-2 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-kumo-inactive transition-colors hover:bg-kumo-tint hover:text-kumo-default"
         >
           <SidebarSimple size={15} className="rotate-180" />
@@ -119,25 +124,25 @@ export default function Sidebar({
           <nav className="flex flex-col gap-0.5 px-2">
             <SidebarItem
               to="/"
-              label="Home"
+              label={t('navigation.home')}
               icon={<House size={14} weight="regular" />}
               collapsed={collapsed}
             />
             <SidebarItem
               to="/workspaces"
-              label="Workspaces"
+              label={t('navigation.workspaces')}
               icon={<SquaresFour size={14} weight="regular" />}
               collapsed={collapsed}
             />
             <SidebarItem
               to="/blueprints"
-              label="Blueprints"
+              label={t('navigation.blueprints')}
               icon={<Blueprint size={14} weight="regular" />}
               collapsed={collapsed}
             />
             <SidebarItem
               to="/outputs"
-              label="Outputs"
+              label={t('navigation.outputs')}
               icon={<Stack size={14} weight="regular" />}
               collapsed={collapsed}
             />
@@ -182,7 +187,7 @@ export default function Sidebar({
             })}
             <SidebarItem
               to="/explore"
-              label="Explore"
+              label={t('navigation.explore')}
               icon={<Compass size={14} weight="regular" />}
               collapsed={collapsed}
             />

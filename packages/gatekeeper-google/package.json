@@ -24,6 +24,7 @@
     "miniflare": "5.20260801.0-alpha",
     "typescript": "catalog:",
     "typescript6": "npm:typescript@6.0.3",
+    "urlpattern-polyfill": "^10.1.0",
     "vitest": "catalog:",
     "wrangler": "catalog:"
   }

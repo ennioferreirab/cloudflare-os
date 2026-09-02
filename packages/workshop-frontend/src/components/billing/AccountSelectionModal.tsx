@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { CloudflareUsageInfo, CloudflareAccountOption } from '@gadgets/workshop-shared/api'
 import { Dialog, Button, Loader, Radio, useKumoToastManager } from '@cloudflare/kumo'
 import { Warning } from '@phosphor-icons/react'
 import { useOptionalAuthenticatedApi } from '../../AuthContext'
 import { useCloudflareLimitsEnabled } from '../../ServerConfigContext'
+import { useLocale } from '../../i18n'
 
 /**
  * Global, mandatory modal that forces the user to pick which Cloudflare account to bill whenever
@@ -11,6 +12,9 @@ import { useCloudflareLimitsEnabled } from '../../ServerConfigContext'
  * the selection is pending, so it can't be missed after connecting. Mounted once in the app shell.
  */
 export default function AccountSelectionModal() {
+  const { t } = useLocale()
+  const translateRef = useRef(t)
+  translateRef.current = t
   const limitsEnabled = useCloudflareLimitsEnabled()
   const auth = useOptionalAuthenticatedApi()
   const toasts = useKumoToastManager()
@@ -55,11 +59,11 @@ export default function AccountSelectionModal() {
     setSaving(true)
     try {
       await auth.authenticatedApi.selectCloudflareAccount(chosen)
-      toasts.add({ title: 'Cloudflare account selected', variant: 'success' })
+      toasts.add({ title: translateRef.current('activityArea.billing.accountSelected'), variant: 'success' })
       setNeedsSelection(false)
       setAccounts(null)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to select account'
+      const msg = err instanceof Error ? err.message : translateRef.current('activityArea.billing.selectAccountFailed')
       toasts.add({ title: msg, variant: 'error' })
     } finally {
       setSaving(false)
@@ -73,19 +77,18 @@ export default function AccountSelectionModal() {
       <Dialog className="responsive-dialog overflow-y-auto p-6 sm:w-[480px]" size="base">
         <Dialog.Title className="text-lg font-semibold mb-2 flex items-center gap-2">
           <Warning size={22} weight="bold" className="text-kumo-warning" />
-          Choose a Cloudflare account
+          {t('activityArea.billing.chooseAccountTitle')}
         </Dialog.Title>
 
         <div className="space-y-4">
           <p className="text-sm text-kumo-subtle">
-            Your Cloudflare connection has access to multiple accounts. Select the one whose credits
-            should be billed for usage beyond the free tier.
+            {t('activityArea.billing.chooseAccountDescription')}
           </p>
 
           {accounts === null ? (
             <div className="flex justify-center py-6"><Loader size="base" /></div>
           ) : accounts.length === 0 ? (
-            <p className="text-sm text-kumo-subtle">No accounts available on this connection.</p>
+            <p className="text-sm text-kumo-subtle">{t('activityArea.billing.noAccounts')}</p>
           ) : (
             <Radio.Group
               appearance="card"
@@ -93,7 +96,7 @@ export default function AccountSelectionModal() {
               onValueChange={setChosen}
               disabled={saving}
             >
-              <Radio.Legend className="sr-only">Cloudflare account</Radio.Legend>
+              <Radio.Legend className="sr-only">{t('activityArea.billing.cloudflareAccount')}</Radio.Legend>
               {accounts.map((a) => (
                 <Radio.Item key={a.accountId} value={a.accountId} label={a.accountName} />
               ))}
@@ -107,10 +110,10 @@ export default function AccountSelectionModal() {
               // un-actionable modal — let them retry or dismiss (it re-checks on focus).
               <>
                 <Button variant="ghost" onClick={() => setNeedsSelection(false)}>
-                  Dismiss
+                  {t('activityArea.billing.dismiss')}
                 </Button>
                 <Button variant="secondary" onClick={() => setAccounts(null)}>
-                  Try again
+                  {t('activityArea.common.retry')}
                 </Button>
               </>
             ) : (
@@ -120,7 +123,7 @@ export default function AccountSelectionModal() {
                 loading={saving}
                 disabled={!chosen || saving}
               >
-                Save
+                {t('activityArea.common.save')}
               </Button>
             )}
           </div>

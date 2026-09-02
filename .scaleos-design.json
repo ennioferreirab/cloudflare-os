@@ -1,0 +1,104 @@
+{
+  "format": "scaleos-design-consumer/v1",
+  "design_system": "scaleos-design-system",
+  "source": {
+    "repository": "https://github.com/ennioferreirab/ennio-agent-skills.git",
+    "revision": "5bc02be33cbf62d951910058026f75abb3536203",
+    "path": "skills/scaleos/design-system"
+  },
+  "version": "1.0.0",
+  "mode": "operational",
+  "assets": [
+    {
+      "asset_id": "assets/brand/scaleos-lockup-nav.png",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/scaleos-lockup-nav.png",
+      "sha256": "c3a0cb62be7a83985d889cd28be19f2224748a9ff1f03408dea92baef66c374b"
+    },
+    {
+      "asset_id": "assets/brand/scaleos-icon-24.png",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/scaleos-icon-24.png",
+      "sha256": "40d1f81d5b88eb358d10d9501303d03331d9ef7d701bf50bb7184e8bf6e94216"
+    },
+    {
+      "asset_id": "assets/brand/scaleos-icon-40.png",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/scaleos-icon-40.png",
+      "sha256": "4da0fb7ed23863a9d26470ddb91d8c4152f55ceb9621284d28607a551a6a8e05"
+    },
+    {
+      "asset_id": "assets/brand/favicon-16.png",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/favicon-16.png",
+      "sha256": "3349810100b2591724799f2a4c5bf7c47b52748b497e37d2c9473764cad45cee"
+    },
+    {
+      "asset_id": "assets/brand/favicon-32.png",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/favicon-32.png",
+      "sha256": "62ac928a5e5215054291394077dce6693200cba6596d7b7cea86b0f15f5f056d"
+    },
+    {
+      "asset_id": "assets/brand/favicon.ico",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/favicon.ico",
+      "sha256": "84a45a1cb830a50a066e4c152ca8cd77254bcfc9bc001784b376fc1d3635dabb"
+    },
+    {
+      "asset_id": "assets/brand/apple-touch-icon.png",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/brand/apple-touch-icon.png",
+      "sha256": "0c4ee100bb75a6c337bfc314efb7c481bd7f8aaadbc1ef709abd360955dd004a"
+    },
+    {
+      "asset_id": "assets/fonts/instrument-sans-variable.woff2",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/fonts/instrument-sans-variable.woff2",
+      "sha256": "6219bc4bfdfc5d9b2201dcdf046218b122a758f932e25ed5f168f929b7ca2311"
+    },
+    {
+      "asset_id": "assets/fonts/space-grotesk-latin-var.woff2",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/fonts/space-grotesk-latin-var.woff2",
+      "sha256": "a0d054c4af557de20afd6ca59f47ab353bcaec49c63ff04b6c9d39d0f8910557"
+    },
+    {
+      "asset_id": "assets/fonts/ibm-plex-mono-400.woff2",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/fonts/ibm-plex-mono-400.woff2",
+      "sha256": "c36f509c0a8f9f85f29cb44bc8701d8a9e0b14c499e77a884f789ead7093a7ac"
+    },
+    {
+      "asset_id": "assets/fonts/ibm-plex-mono-500.woff2",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/fonts/ibm-plex-mono-500.woff2",
+      "sha256": "a76f53ca6612e7b3828eec2311098675b7f9849ae4169a8bcef6302aec02a6c0"
+    },
+    {
+      "asset_id": "assets/fonts/ibm-plex-mono-600.woff2",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/fonts/ibm-plex-mono-600.woff2",
+      "sha256": "ad4580d8cb4b5f627c2d18457656732f7f7b070f7837fbc380e08054157e6f6c"
+    },
+    {
+      "asset_id": "assets/integration-marks/gmail.svg",
+      "local_path": "packages/workshop-frontend/public/assets/scaleos/integration-marks/gmail.svg",
+      "sha256": "21b263638deb769267d610a85382792624bdae2fc47c1bc2f8ae6fb6a50413e9"
+    }
+  ],
+  "integrations": [
+    {
+      "service": "Gmail",
+      "integration": "configured connector",
+      "integration_mark": "assets/integration-marks/gmail.svg",
+      "integration_state": "not-verified",
+      "integration_item": "email source records"
+    }
+  ],
+  "migrated_from": {
+    "authority": "Cloudflare OS local Kumo orange theme in packages/workshop-frontend/src/styles.css",
+    "removed_at": "2026-09-01"
+  },
+  "exceptions": [
+    {
+      "rule": "Core defines no dark mode",
+      "reason": "Dark-mode policy remains owned by the application root and is intentionally outside this migration scope.",
+      "approved_by": "Ennio"
+    },
+    {
+      "rule": "Deployment branding remains configurable",
+      "reason": "The fork uses canonical ScaleOS defaults while preserving the upstream admin logo data path for compatibility with existing deployments.",
+      "approved_by": "Ennio"
+    }
+  ],
+  "reviewed_at": "2026-09-01"
+}

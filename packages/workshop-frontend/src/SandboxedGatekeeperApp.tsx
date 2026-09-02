@@ -18,6 +18,7 @@ import {
   parseGatekeeperAppWorkspaceTarget,
   type GatekeeperAppWorkspaceTarget,
 } from './gatekeeperAppNavigation'
+import { useLocale } from './i18n'
 
 // The content-pane rect, in viewport coordinates, that the app pins its page to while the iframe
 // is full-viewport.
@@ -222,6 +223,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
 }) {
   const navigate = useNavigate()
   const { authenticatedApi } = useAuthenticatedApi()
+  const { t } = useLocale()
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const sessionRef = useRef<{ [Symbol.dispose]?(): void } | null>(null)
   const hostRef = useRef<GatekeeperAppHostImpl | null>(null)
@@ -368,7 +370,7 @@ export default function SandboxedGatekeeperApp({ frame, gatekeeperVendorId }: {
       // allow-same-origin (the frame stays an opaque origin), and the app's CSP keeps connect-src 'none'.
       sandbox="allow-scripts allow-modals"
       allow="clipboard-write"
-      title="Gatekeeper app"
+      title={t('connections.app.iframeTitle')}
       style={iframeStyleForOverlay(overlay)}
     />
   )

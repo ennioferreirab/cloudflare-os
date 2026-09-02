@@ -352,6 +352,9 @@ export interface ResourceConfiguratorIframe extends RpcTarget {
    */
   collectResourceUrl(): Promise<string>;
 
+  /** Update the locale used to render the sandboxed configurator UI. */
+  updateLocale(locale: string): void;
+
   /**
    * Tell the iframe where it sits in parent viewport. This is used by some configuration UIs
    * to determine height of dropdowns.

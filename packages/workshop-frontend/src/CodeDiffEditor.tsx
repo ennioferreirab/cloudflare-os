@@ -17,6 +17,7 @@ import { buildDiffModel, type DiffStatus } from './diff/diffModel'
 import { diffRenderExtension, setDiffRender } from './diff/diffRenderer'
 import { getLanguage } from './getLanguage'
 import { useTheme } from './ThemeContext'
+import { useLocale } from './i18n'
 import './CodeDiffEditor.css'
 
 /**
@@ -81,6 +82,7 @@ export default function CodeDiffEditor({
   height = '100%',
 }: CodeDiffEditorProps) {
   const { resolvedThemeMode } = useTheme()
+  const { t } = useLocale()
   const containerRef = useRef<HTMLDivElement | null>(null)
   const modifiedHostRef = useRef<HTMLDivElement | null>(null)
   const originalHostRef = useRef<HTMLDivElement | null>(null)
@@ -137,6 +139,13 @@ export default function CodeDiffEditor({
 
   const showEditors =
     filename !== null && (original !== null || session !== undefined || text !== null)
+  const statusLabel = summary.status === 'Unchanged'
+    ? t('misc.codeDiff.unchanged')
+    : summary.status === 'Added'
+      ? t('misc.codeDiff.added')
+      : summary.status === 'Deleted'
+        ? t('misc.codeDiff.deleted')
+        : null
 
   // ---- diff recompute (rAF-coalesced) --------------------------------------------------------
 
@@ -417,7 +426,7 @@ export default function CodeDiffEditor({
         className="flex items-center justify-center bg-kumo-base text-[13px] leading-[18px] tracking-[-0.25px] text-kumo-subtle"
         style={{ height }}
       >
-        {!filename ? 'Select a file to view changes' : 'Loading diff...'}
+        {!filename ? t('misc.codeDiff.selectFile') : t('misc.codeDiff.loading')}
       </div>
     )
   }
@@ -433,8 +442,8 @@ export default function CodeDiffEditor({
             <button
               type="button"
               className={layoutButtonClass(diffLayoutPreference === 'stacked')}
-              title="Stacked diff"
-              aria-label="Use stacked diff layout"
+              title={t('misc.codeDiff.stacked')}
+              aria-label={t('misc.codeDiff.useStacked')}
               aria-pressed={diffLayoutPreference === 'stacked'}
               onClick={() => setDiffLayoutPreference('stacked')}
             >
@@ -443,8 +452,8 @@ export default function CodeDiffEditor({
             <button
               type="button"
               className={layoutButtonClass(diffLayoutPreference === 'split' && canSplitDiff, !canSplitDiff)}
-              title={canSplitDiff ? 'Split diff' : 'Split diff needs more space'}
-              aria-label="Use split diff layout"
+              title={canSplitDiff ? t('misc.codeDiff.split') : t('misc.codeDiff.splitNeedsSpace')}
+              aria-label={t('misc.codeDiff.useSplit')}
               aria-pressed={diffLayoutPreference === 'split' && canSplitDiff}
               disabled={!canSplitDiff}
               onClick={() => setDiffLayoutPreference('split')}
@@ -456,8 +465,8 @@ export default function CodeDiffEditor({
             className="pointer-events-none flex h-7 items-center gap-2 rounded-lg border border-kumo-line bg-kumo-base px-2 font-mono text-[11px] leading-4 tracking-[-0.2px] shadow-sm"
             style={{ fontFamily: monoFont }}
           >
-            {summary.status !== 'Modified' && (
-              <span className="text-[10px] font-medium text-kumo-subtle">{summary.status}</span>
+            {statusLabel && (
+              <span className="text-[10px] font-medium text-kumo-subtle">{statusLabel}</span>
             )}
             <span className="text-kumo-danger">-{summary.deletions}</span>
             <span className="text-kumo-success">+{summary.additions}</span>

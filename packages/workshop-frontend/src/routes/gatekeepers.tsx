@@ -7,7 +7,6 @@ import {
   ArrowsClockwise,
   Plus,
   CaretRight,
-  Hexagon,
   ShieldCheck,
   Plugs,
 } from '@phosphor-icons/react'
@@ -25,6 +24,7 @@ import { GatekeeperVendorInfo } from '@gadgets/workshop-shared/api'
 import { useDocumentTitle } from '../useDocumentTitle'
 import { useSiteName } from '../ServerConfigContext'
 import { AccountsSubscriberAdapter } from '../accountsSubscriber'
+import { useLocale } from '../i18n'
 
 export const Route = createFileRoute('/gatekeepers')({
   component: ConnectorsPage,
@@ -44,6 +44,17 @@ interface VendorEntry {
   description: VendorDescription
   supportedResources: SupportedResource[]
 }
+
+const GOOGLE_RESOURCE_COPY_KEYS = {
+  'Gmail Mailbox': 'gmail',
+  'Google Doc': 'doc',
+  'Google Spreadsheet': 'spreadsheet',
+  'Google Calendar': 'calendar',
+  'Google Drive Account': 'driveAccount',
+  'Google Workspace Shared Drive': 'sharedDrive',
+  'Google Drive File': 'driveFile',
+  BigQuery: 'bigQuery',
+} as const
 
 function VendorIconTile({
   logoUrl,
@@ -103,6 +114,7 @@ function ConnectorCard({
   reconnectBusy = false,
   view = 'grid',
 }: ConnectorCardProps) {
+  const { t } = useLocale()
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.currentTarget !== event.target) return
     if (event.key === 'Enter' || event.key === ' ') {
@@ -148,7 +160,7 @@ function ConnectorCard({
         className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-full border border-kumo-line bg-kumo-base px-3 text-[12px] leading-4 font-medium tracking-[-0.2px] text-kumo-default transition-[background-color,border-color,opacity,transform] duration-150 ease-out hover:border-kumo-fill hover:bg-kumo-tint active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
       >
         <ArrowsClockwise size={12} weight="bold" />
-        {reconnectBusy ? 'Opening...' : 'Reconnect'}
+        {reconnectBusy ? t('connections.gatekeepers.opening') : t('connections.gatekeepers.reconnect')}
       </button>
     ) : (
       <div className="grid h-7 w-7 place-items-center text-kumo-inactive transition-colors group-hover:text-kumo-default">
@@ -261,6 +273,7 @@ function ConnectorsHeroDiagram({
   vendors: VendorEntry[]
   siteName: string
 }) {
+  const { t } = useLocale()
   const [hoveredSource, setHoveredSource] = useState<number | null>(null)
   const seen = new Set<string>()
   const nodes = [
@@ -402,7 +415,7 @@ function ConnectorsHeroDiagram({
         <button
           type="button"
           className="themed-card-hover-shadow grid h-[52px] w-[52px] place-items-center rounded-2xl border border-kumo-line bg-kumo-base text-kumo-brand transition-[border-color,box-shadow] hover:border-kumo-fill focus:outline-none focus-visible:ring-2 focus-visible:ring-kumo-ring focus-visible:ring-offset-2 focus-visible:ring-offset-kumo-base"
-          aria-label="Gatekeeper keeps Gadget access limited to connected resources"
+          aria-label={t('connections.hero.ariaLabel')}
         >
           <ShieldCheck size={21} weight="duotone" />
         </button>
@@ -413,10 +426,10 @@ function ConnectorsHeroDiagram({
             </div>
             <div className="min-w-0">
               <p className="m-0 text-[12px] leading-4 font-semibold tracking-[-0.2px] text-kumo-default">
-                Gatekeeper
+                {t('connections.hero.title')}
               </p>
               <p className="mt-1 text-[11px] leading-4 font-normal tracking-[-0.1px] text-kumo-subtle">
-                Keeps each workspace limited to the resources you connect and ensures every user has the required permissions before accessing them.
+                {t('connections.hero.description')}
               </p>
             </div>
           </div>
@@ -425,8 +438,12 @@ function ConnectorsHeroDiagram({
       </div>
 
       <div className="absolute left-[268px] top-[58px] z-10 flex h-[52px] w-[172px] items-center gap-2 rounded-2xl border border-kumo-line bg-kumo-elevated pl-2 pr-4">
-        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-kumo-base text-kumo-brand">
-          <Hexagon size={17} weight="bold" />
+        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-kumo-base">
+          <img
+            src="/assets/scaleos/brand/scaleos-icon-40.png"
+            alt=""
+            className="h-5 w-5 object-contain"
+          />
         </div>
         <span className="relative -top-px min-w-0 truncate text-base leading-5 font-semibold tracking-tight text-kumo-default">
           {siteName}
@@ -442,8 +459,32 @@ type ModalTarget =
   | null
 
 function ConnectorsPage() {
-  useDocumentTitle('Gatekeepers')
+  const { t } = useLocale()
+  useDocumentTitle(t('connections.gatekeepers.pageTitle'))
   const siteName = useSiteName()
+
+  const localizeVendor = (vendor: VendorEntry): VendorEntry => {
+    if (vendor.id !== 'google') return vendor
+    return {
+      ...vendor,
+      description: {
+        ...vendor.description,
+        tagline: t('connections.google.tagline'),
+        description: t('connections.google.description', { siteName }),
+      },
+      supportedResources: vendor.supportedResources.map((resource) => {
+        const copyKey = GOOGLE_RESOURCE_COPY_KEYS[
+          resource.title as keyof typeof GOOGLE_RESOURCE_COPY_KEYS
+        ]
+        if (!copyKey) return resource
+        return {
+          ...resource,
+          title: t(`connections.google.resources.${copyKey}.title`),
+          description: t(`connections.google.resources.${copyKey}.description`),
+        }
+      }),
+    }
+  }
 
   const { authenticatedApi } = useAuthenticatedApi()
   const toasts = useKumoToastManager()
@@ -495,7 +536,7 @@ function ConnectorsPage() {
         const unavailable = vendorList.filter((v) => v.unavailable)
         if (unavailable.length > 0) {
           toasts.add({
-            title: `Some services are temporarily unavailable: ${unavailable.map((v) => v.id).join(', ')}`,
+            title: t('connections.gatekeepers.unavailable', { services: unavailable.map((v) => v.id).join(', ') }),
             variant: 'warning',
           })
         }
@@ -582,7 +623,7 @@ function ConnectorsPage() {
       handleCloseModal()
     } catch (err) {
       console.error('Failed to connect account:', err)
-      toasts.add({ title: 'Failed to start connection', variant: 'error' })
+      toasts.add({ title: t('connections.gatekeepers.connectionStartFailed'), variant: 'error' })
     } finally {
       setConnecting(false)
     }
@@ -603,7 +644,7 @@ function ConnectorsPage() {
       // once `grantedResourceUrlPatterns` updates.
     } catch (err) {
       console.error('Failed to expand account access:', err)
-      toasts.add({ title: 'Failed to request additional access', variant: 'error' })
+      toasts.add({ title: t('connections.gatekeepers.grantFailed'), variant: 'error' })
     } finally {
       setEnsuringResourceUrlPatterns((prev) =>
         prev.filter((p) => !resourceUrlPatterns.includes(p)),
@@ -624,7 +665,7 @@ function ConnectorsPage() {
       handleCloseModal()
     } catch (err) {
       console.error('Failed to disconnect account:', err)
-      toasts.add({ title: 'Failed to disconnect account', variant: 'error' })
+      toasts.add({ title: t('connections.gatekeepers.disconnectFailed'), variant: 'error' })
     } finally {
       setDisconnecting(false)
     }
@@ -637,41 +678,52 @@ function ConnectorsPage() {
       window.open(url, '_blank', 'noopener,noreferrer')
     } catch (err) {
       console.error('Failed to reconnect account:', err)
-      toasts.add({ title: 'Failed to reconnect account', variant: 'error' })
+      toasts.add({ title: t('connections.gatekeepers.reconnectFailed'), variant: 'error' })
     } finally {
       setReconnectingAccountId(null)
     }
   }
 
   const searchLower = search.toLowerCase()
+  const localizedVendors = useMemo(
+    () => vendors.map(localizeVendor),
+    [vendors, siteName, t],
+  )
+  const localizedAddable = useMemo(
+    () => addable.map(localizeVendor),
+    [addable, siteName, t],
+  )
   const filteredAccounts = useMemo(() => {
     const matchesSearch = (text: string | undefined) =>
       !searchLower || (text ?? '').toLowerCase().includes(searchLower)
     const resourcesForAccountFilter = (account: AccountEntry) =>
-      vendors.find((v) => v.id === account.vendorId)?.supportedResources ??
+      localizedVendors.find((v) => v.id === account.vendorId)?.supportedResources ??
       account.supportedResources
 
     return accounts.filter((a) => {
       const resources = resourcesForAccountFilter(a)
+      const vendorDescription = localizedVendors.find(
+        (vendor) => vendor.id === a.vendorId,
+      )?.description ?? a.vendorDescription
       return (
         matchesSearch(a.accountDescription.displayName) ||
         matchesSearch(a.accountDescription.uniqueName) ||
-        matchesSearch(a.vendorDescription.displayName) ||
-        matchesSearch(a.vendorDescription.tagline) ||
+        matchesSearch(vendorDescription.displayName) ||
+        matchesSearch(vendorDescription.tagline) ||
         resources.some((r) => matchesSearch(r.title))
       )
     })
-  }, [accounts, vendors, searchLower])
+  }, [accounts, localizedVendors, searchLower])
 
   // Connectable vendors = OAuth/resource gatekeepers plus opt-in ambient ones, rendered identically.
   // An ambient vendor is recognized by `description.autoProvisionsAccount`, which routes the connect
   // action to a direct (no-OAuth) add instead.
   const availableVendors = useMemo<VendorEntry[]>(
     () => [
-      ...vendors,
-      ...addable,
+      ...localizedVendors,
+      ...localizedAddable,
     ],
-    [vendors, addable],
+    [localizedVendors, localizedAddable],
   )
 
   const filteredAvailable = useMemo(() => {
@@ -694,11 +746,11 @@ function ConnectorsPage() {
     modalTarget?.kind === 'connect'
       ? availableVendors.find((v) => v.id === modalTarget.vendorId)
       : activeAccount
-      ? availableVendors.find((v) => v.id === activeAccount.vendorId) ?? {
+      ? availableVendors.find((v) => v.id === activeAccount.vendorId) ?? localizeVendor({
           id: activeAccount.vendorId,
           description: activeAccount.vendorDescription,
           supportedResources: activeAccount.supportedResources,
-        }
+        })
       : undefined
 
   // True when the connect modal targets an ambient gatekeeper (added directly, no OAuth flow).
@@ -720,11 +772,10 @@ function ConnectorsPage() {
         <header className="mb-8 grid gap-8 lg:grid-cols-[minmax(0,540px)_444px] lg:items-center lg:justify-between">
           <div>
             <h1 className="m-0 text-3xl font-semibold leading-tight tracking-tight text-kumo-default sm:text-[34px]">
-              Gatekeepers
+              {t('connections.gatekeepers.pageTitle')}
             </h1>
             <p className="mt-2 text-[14px] leading-[20px] font-normal tracking-[-0.25px] text-kumo-subtle">
-              Add the apps and accounts your workspaces can use. Connect once, then wire
-              them into anything you build.
+              {t('connections.gatekeepers.pageDescription')}
             </p>
           </div>
           <ConnectorsHeroDiagram accounts={accounts} vendors={vendors} siteName={siteName} />
@@ -740,7 +791,7 @@ function ConnectorsPage() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search gatekeepers…"
+              placeholder={t('connections.gatekeepers.searchPlaceholder')}
               className="h-10 w-full rounded-lg border border-kumo-line bg-kumo-base pl-9 pr-4 text-[14px] leading-5 tracking-[-0.25px] text-kumo-default placeholder:text-kumo-inactive transition-[border-color,box-shadow] focus:border-kumo-ring focus:outline-none focus:ring-[3px] focus:ring-kumo-ring/15"
             />
           </div>
@@ -750,37 +801,40 @@ function ConnectorsPage() {
         {loadError && (
           <div className="rounded-2xl border border-kumo-line bg-kumo-base px-4 py-6 text-center">
             <p className="m-0 text-[13px] leading-[18px] font-medium tracking-[-0.25px] text-kumo-danger">
-              Something went wrong loading your gatekeepers.
+              {t('connections.gatekeepers.loadErrorTitle')}
             </p>
             <p className="mt-1 text-[12px] leading-4 font-normal tracking-[-0.2px] text-kumo-subtle">
-              Check your connection and try refreshing the page.
+              {t('connections.gatekeepers.loadErrorDescription')}
             </p>
           </div>
         )}
 
         {initialLoading && (
           <div className="rounded-2xl border border-kumo-line bg-kumo-base px-4 py-8 text-center text-[13px] leading-[18px] font-normal tracking-[-0.25px] text-kumo-subtle">
-            Loading gatekeepers...
+            {t('connections.gatekeepers.loading')}
           </div>
         )}
 
         {filteredAccounts.length > 0 && (
           <section className="mb-10">
-            <SectionEyebrow label="Connected" count={filteredAccounts.length} />
+            <SectionEyebrow label={t('connections.gatekeepers.connected')} count={filteredAccounts.length} />
             <div className={sectionGridClass}>
               {filteredAccounts.map((account) => {
                 const displayName =
                   account.accountDescription.displayName ??
                   account.accountDescription.uniqueName ??
-                  'Connected'
-                const tagline = account.vendorDescription.tagline
+                  t('connections.gatekeepers.connectedFallback')
+                const vendorDescription = localizedVendors.find(
+                  (vendor) => vendor.id === account.vendorId,
+                )?.description ?? account.vendorDescription
+                const tagline = vendorDescription.tagline
                 return (
                   <ConnectorCard
                     key={account.id}
-                    logoUrl={account.vendorDescription.logo?.url}
-                    color={account.vendorDescription.color}
-                    fallback={account.vendorDescription.displayName}
-                    name={account.vendorDescription.displayName}
+                    logoUrl={vendorDescription.logo?.url}
+                    color={vendorDescription.color}
+                    fallback={vendorDescription.displayName}
+                    name={vendorDescription.displayName}
                     metaLine={
                       <span
                         className={`truncate ${
@@ -789,7 +843,7 @@ function ConnectorsPage() {
                       >
                         {account.credentialsValid
                           ? displayName
-                          : 'Credentials expired'}
+                          : t('connections.gatekeepers.credentialsExpired')}
                       </span>
                     }
                     tagline={tagline}
@@ -807,7 +861,7 @@ function ConnectorsPage() {
 
         {filteredAvailable.length > 0 && (
           <section className="mb-10">
-            <SectionEyebrow label="Available" />
+            <SectionEyebrow label={t('connections.gatekeepers.available')} />
             <div className={sectionGridClass}>
 
               {filteredAvailable.map((vendor) => (
@@ -834,13 +888,13 @@ function ConnectorsPage() {
             <EmptyState
               title={
                 search
-                  ? 'No gatekeepers match'
-                  : 'No gatekeepers yet'
+                  ? t('connections.gatekeepers.noMatchTitle')
+                  : t('connections.gatekeepers.noGatekeepersTitle')
               }
               description={
                 search
-                  ? "We couldn't find anything matching your search."
-                  : 'Gatekeepers will appear here as they become available in your workspace.'
+                  ? t('connections.gatekeepers.noMatchDescription')
+                  : t('connections.gatekeepers.noGatekeepersDescription')
               }
               icon={Plugs}
             />
