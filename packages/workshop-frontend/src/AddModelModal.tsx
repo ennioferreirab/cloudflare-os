@@ -21,6 +21,7 @@ const PROVIDER_LABELS: Record<AiModelProvider, string> = {
   anthropic: 'Anthropic',
   openai: 'OpenAI',
   google: 'Google',
+  openrouter: 'OpenRouter',
   cloudflare: 'Cloudflare Workers AI',
   ollama: 'Ollama',
 }
@@ -30,18 +31,24 @@ const API_TOKEN_PLACEHOLDERS: Record<AiModelProvider, string> = {
   anthropic: 'sk-ant-...',
   openai: 'sk-...',
   google: 'AIza...',
+  openrouter: 'sk-or-v1-...',
   cloudflare: 'Cloudflare API token',
   ollama: '(optional)',
 }
 
 // Example used in the custom-model placeholders for providers that have no suggested models
-// (currently Ollama, which serves whatever the user has pulled locally).
-const FALLBACK_EXAMPLE_MODEL = { modelId: 'gemma4:31b', name: 'Gemma 4 31B' }
+// (currently Ollama and OpenRouter).
+const CUSTOM_MODEL_EXAMPLES: Partial<Record<AiModelProvider, { modelId: string, name: string }>> = {
+  ollama: { modelId: 'gemma4:31b', name: 'Gemma 4 31B' },
+  openrouter: { modelId: 'openai/gpt-5.2', name: 'GPT-5.2 via OpenRouter' },
+}
 
 // Pick an example model to show in the custom-model placeholders for the given provider.
 function exampleModel(provider: AiModelProvider): { modelId: string, name: string } {
   const first = Object.entries(SUGGESTED_MODELS[provider])[0]
-  return first ? { modelId: first[0], name: first[1].name } : FALLBACK_EXAMPLE_MODEL
+  return first
+    ? { modelId: first[0], name: first[1].name }
+    : CUSTOM_MODEL_EXAMPLES[provider] ?? { modelId: 'provider/model', name: 'Custom model' }
 }
 
 // Encode a selection into a string value for the Select component.
@@ -61,14 +68,15 @@ function decodeSelection(value: string): SelectionType {
   return { type: 'suggested', provider, modelId, displayName }
 }
 
-// Build the flat list of options for the Select dropdown.
+// Build the flat list of model options, keeping Workers AI as the final provider group.
 function buildOptions(
   gatewayMode: boolean,
   enabledProviders: Set<string> | null,
   otherProvider: (provider: string) => string,
 ) {
   const options: { value: string; label: string; provider: string }[] = []
-  const providerOrder = Object.keys(SUGGESTED_MODELS) as AiModelProvider[]
+  const providerOrder = (Object.keys(SUGGESTED_MODELS) as AiModelProvider[])
+    .toSorted((left, right) => Number(left === 'cloudflare') - Number(right === 'cloudflare'))
 
   for (const provider of providerOrder) {
     if (enabledProviders && !enabledProviders.has(provider)) continue
