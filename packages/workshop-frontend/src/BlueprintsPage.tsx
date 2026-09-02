@@ -5,19 +5,20 @@ import {
   BookOpen,
   MagnifyingGlass,
 } from "@phosphor-icons/react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BlueprintPublicInfo } from "@gadgets/workshop-shared/api";
 import { VendorDescription } from "@gadgets/workshop-shared/gatekeeper";
 import { useAuthenticatedApi } from "./AuthContext";
 import { BindingBadge, uniqueBindingBadges } from "./components/BlueprintCard";
 import { BlueprintPreviewPlaceholder } from "./components/BlueprintPreviewImage";
+import { localizeBlueprintPresentation } from "./components/format/localizedFormats";
 import ViewToggle from "./components/ViewToggle";
 import { useLocale } from "./i18n";
 
 type VendorMap = Map<string, VendorDescription>;
 
 export default function BlueprintsPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { authenticatedApi } = useAuthenticatedApi();
   const toasts = useKumoToastManager();
   const toastsRef = useRef(toasts);
@@ -68,8 +69,12 @@ export default function BlueprintsPage() {
     };
   }, [authenticatedApi, t]);
 
+  const localizedFeaturedBlueprints = useMemo(
+    () => featuredBlueprints.map((blueprint) => localizeBlueprintPresentation(blueprint, locale)),
+    [featuredBlueprints, locale],
+  );
   const q = search.trim().toLowerCase();
-  const filtered = featuredBlueprints.filter((b) => {
+  const filtered = localizedFeaturedBlueprints.filter((b) => {
     if (!q) return true;
     return (
       b.metadata.title.toLowerCase().includes(q) ||

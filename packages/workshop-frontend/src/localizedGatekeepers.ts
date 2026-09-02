@@ -13,7 +13,25 @@ const GOOGLE_RESOURCE_COPY_KEYS = {
   BigQuery: 'bigQuery',
 } as const
 
-/** Localize the Google presentation while preserving provider IDs and resource URL patterns. */
+const VENDOR_COPY_KEYS = {
+  cloudflare: 'cloudflare',
+  confluence: 'confluence',
+  context: 'context',
+  email: 'email',
+  github: 'github',
+  homeassistant: 'homeAssistant',
+  linear: 'linear',
+  mcp: 'mcp',
+  'mcp-portal': 'mcpPortal',
+  notion: 'notion',
+  scheduler: 'scheduler',
+  slack: 'slack',
+  spotify: 'spotify',
+  supabase: 'supabase',
+  zoominfo: 'zoominfo',
+} as const
+
+/** Localize built-in connector presentation while preserving provider IDs and resource URLs. */
 export function localizeGatekeeperPresentation(
   vendorId: string,
   description: VendorDescription,
@@ -21,23 +39,46 @@ export function localizeGatekeeperPresentation(
   siteName: string,
   t: Translate,
 ): { description: VendorDescription; supportedResources: SupportedResource[] } {
-  if (vendorId !== 'google') return { description, supportedResources }
+  const normalizedVendorId = vendorId.toLowerCase()
+  if (normalizedVendorId === 'google') {
+    return {
+      description: {
+        ...description,
+        tagline: t('connections.google.tagline'),
+        description: t('connections.google.description', { siteName }),
+      },
+      supportedResources: supportedResources.map(resource => {
+        const copyKey = GOOGLE_RESOURCE_COPY_KEYS[
+          resource.title as keyof typeof GOOGLE_RESOURCE_COPY_KEYS
+        ]
+        if (!copyKey) return resource
+        return {
+          ...resource,
+          title: t(`connections.google.resources.${copyKey}.title`),
+          description: t(`connections.google.resources.${copyKey}.description`),
+        }
+      }),
+    }
+  }
+
+  const copyKey = VENDOR_COPY_KEYS[normalizedVendorId as keyof typeof VENDOR_COPY_KEYS]
+  if (!copyKey) return { description, supportedResources }
+
+  const vendorPath = `connections.vendors.${copyKey}`
+  const tagline = normalizedVendorId === 'mcp-portal'
+    ? description.tagline?.startsWith('Connect a server behind ')
+      ? t(`${vendorPath}.taglineConfigured`, {
+        host: description.tagline.slice('Connect a server behind '.length),
+      })
+      : t(`${vendorPath}.taglineUnavailable`)
+    : t(`${vendorPath}.tagline`)
+
   return {
     description: {
       ...description,
-      tagline: t('connections.google.tagline'),
-      description: t('connections.google.description', { siteName }),
+      tagline,
+      description: t(`${vendorPath}.description`),
     },
-    supportedResources: supportedResources.map(resource => {
-      const copyKey = GOOGLE_RESOURCE_COPY_KEYS[
-        resource.title as keyof typeof GOOGLE_RESOURCE_COPY_KEYS
-      ]
-      if (!copyKey) return resource
-      return {
-        ...resource,
-        title: t(`connections.google.resources.${copyKey}.title`),
-        description: t(`connections.google.resources.${copyKey}.description`),
-      }
-    }),
+    supportedResources,
   }
 }

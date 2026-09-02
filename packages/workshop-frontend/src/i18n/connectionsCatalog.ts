@@ -1,8 +1,8 @@
 /**
  * Messages used by connector, resource-picker, and gatekeeper surfaces.
  *
- * Keep the two trees structurally identical. Dynamic vendor metadata is shown as received; the
- * built-in Google connector is localized here because its copy is owned and shipped with ScaleOS.
+ * Keep the two trees structurally identical. Built-in connector presentation is localized at the
+ * frontend edge; dynamic account names and provider data continue to be shown as received.
  */
 const en = {
   connections: {
@@ -212,6 +212,69 @@ const en = {
       disconnectFailed: 'Failed to disconnect account',
       reconnectFailed: 'Failed to reconnect account',
       unavailable: 'Some services are temporarily unavailable: {{services}}',
+    },
+    vendors: {
+      cloudflare: {
+        tagline: 'Sign in, use AI Gateway, and inspect Workers Observability',
+        description: 'Sign in with your Cloudflare account and use your own Cloudflare AI Gateway credits for usage beyond the free tier. You can also connect Workers Observability to inspect logs, invocations, traces, and aggregate metrics.',
+      },
+      confluence: {
+        tagline: 'Read and write your Confluence pages and spaces',
+        description: 'Connect your Atlassian Confluence site so ScaleOS can search, read, and edit the pages, blog posts, and spaces you share. Build agents that draft documentation, organize knowledge bases, or keep pages up to date.',
+      },
+      context: {
+        tagline: 'Author and consult shared context collections',
+        description: 'The Context Library lets you and your team author collections of context documents that agents can consult to learn how to perform tasks. It is always available — no connection needed.',
+      },
+      email: {
+        tagline: 'Trigger gadgets from incoming email',
+        description: 'Give ScaleOS an email address it can receive messages from. Useful for triage agents, ticket-from-email workflows, or anything driven by mail.',
+      },
+      github: {
+        tagline: 'Triage issues, review PRs, and manage repos',
+        description: 'Connect your GitHub account so ScaleOS can read and update issues, pull requests, and reviews on the repositories you choose.',
+      },
+      homeAssistant: {
+        tagline: 'Control your smart home, read sensor state, and edit Lovelace dashboards',
+        description: 'Connect your Home Assistant instance so ScaleOS can read entity state, call services to control devices, edit dashboards, and render templates. Build agents that automate your home, alert on sensor changes, or generate custom dashboards.',
+      },
+      linear: {
+        tagline: 'Triage, create, and update issues',
+        description: 'Connect your Linear account so ScaleOS can read and manage issues, projects, and comments across the teams you choose.',
+      },
+      mcp: {
+        tagline: 'Connect any Model Context Protocol server',
+        description: 'Connect a Model Context Protocol server and use its tools from a Gadget. Reads happen straight away. Anything that writes waits for your approval.',
+      },
+      mcpPortal: {
+        taglineConfigured: 'Connect a server behind {{host}}',
+        taglineUnavailable: 'No MCP server portal is configured',
+        description: 'Use the MCP servers this organization has approved, through its MCP server portal. Reads happen straight away. Anything that writes waits for your approval.',
+      },
+      notion: {
+        tagline: 'Read and write your Notion pages and databases',
+        description: 'Connect your Notion workspace so ScaleOS can search, read, and edit the pages and databases you share. Build agents that draft documents, organize notes, or manage database records.',
+      },
+      scheduler: {
+        tagline: 'Run workspace tasks on a schedule',
+        description: 'Register recurring and one-shot workspace tasks.',
+      },
+      slack: {
+        tagline: 'Read channels, DMs, and threads',
+        description: 'Connect your Slack account to give ScaleOS read-only access to the workspaces, channels, direct messages, and threads you can see. Build agents that summarize conversations, monitor channels, or search across your Slack history.',
+      },
+      spotify: {
+        tagline: 'Manage playlists, your library, and playback',
+        description: 'Connect your Spotify account so ScaleOS can search the catalog, read and edit your library and playlists, and control playback on your devices. Grant whole-account access or scope a Gadget to a single playlist.',
+      },
+      supabase: {
+        tagline: 'Query Postgres, inspect schema, and manage projects',
+        description: 'Connect your Supabase account so ScaleOS can run SQL against your project databases, explore schema, and inspect edge functions and storage for the projects you choose.',
+      },
+      zoominfo: {
+        tagline: 'Search and enrich B2B company & contact intelligence',
+        description: 'Connect your ZoomInfo account so ScaleOS can resolve filter values, search companies, contacts, intent signals, scoops, and news, and enrich matched records into full detail. Search is free; enrichment consumes ZoomInfo credits. Build agents that assemble target account lists, research accounts, and prioritize outreach on buying signals.',
+      },
     },
     google: {
       tagline: 'Draft replies, edit docs, read sheets, search Drive, manage calendars, and analyze data',
@@ -455,6 +518,69 @@ const ptBR = {
       disconnectFailed: 'Não foi possível desconectar a conta',
       reconnectFailed: 'Não foi possível reconectar a conta',
       unavailable: 'Alguns serviços estão temporariamente indisponíveis: {{services}}',
+    },
+    vendors: {
+      cloudflare: {
+        tagline: 'Entre, use o AI Gateway e inspecione a Observabilidade de Workers',
+        description: 'Entre com sua conta Cloudflare e use seus próprios créditos do Cloudflare AI Gateway no uso além da cota gratuita. Você também pode conectar a Observabilidade de Workers para inspecionar logs, invocações, traces e métricas agregadas.',
+      },
+      confluence: {
+        tagline: 'Leia e edite suas páginas e espaços do Confluence',
+        description: 'Conecte seu site Atlassian Confluence para que o ScaleOS pesquise, leia e edite as páginas, posts e espaços que você compartilhar. Crie agentes para rascunhar documentação, organizar bases de conhecimento ou manter páginas atualizadas.',
+      },
+      context: {
+        tagline: 'Crie e consulte coleções de contexto compartilhadas',
+        description: 'A Biblioteca de Contexto permite que você e sua equipe criem coleções de documentos que os agentes consultam para aprender a executar tarefas. Ela está sempre disponível, sem necessidade de conexão.',
+      },
+      email: {
+        tagline: 'Acione gadgets a partir de e-mails recebidos',
+        description: 'Dê ao ScaleOS um endereço de e-mail para receber mensagens. Útil para agentes de triagem, fluxos que transformam e-mails em chamados ou qualquer automação acionada por e-mail.',
+      },
+      github: {
+        tagline: 'Faça triagem de issues, revise PRs e gerencie repositórios',
+        description: 'Conecte sua conta GitHub para que o ScaleOS leia e atualize issues, pull requests e revisões nos repositórios escolhidos.',
+      },
+      homeAssistant: {
+        tagline: 'Controle sua casa, leia sensores e edite painéis Lovelace',
+        description: 'Conecte sua instância do Home Assistant para que o ScaleOS leia estados de entidades, controle dispositivos, edite painéis e renderize templates. Crie agentes para automatizar sua casa, alertar sobre mudanças nos sensores ou gerar painéis personalizados.',
+      },
+      linear: {
+        tagline: 'Faça triagem, crie e atualize issues',
+        description: 'Conecte sua conta Linear para que o ScaleOS leia e gerencie issues, projetos e comentários nas equipes escolhidas.',
+      },
+      mcp: {
+        tagline: 'Conecte qualquer servidor do Model Context Protocol',
+        description: 'Conecte um servidor do Model Context Protocol e use suas ferramentas em um Gadget. Leituras acontecem imediatamente; qualquer operação de escrita aguarda sua aprovação.',
+      },
+      mcpPortal: {
+        taglineConfigured: 'Conecte um servidor por trás de {{host}}',
+        taglineUnavailable: 'Nenhum portal de servidor MCP está configurado',
+        description: 'Use os servidores MCP aprovados pela sua organização por meio do portal MCP. Leituras acontecem imediatamente; qualquer operação de escrita aguarda sua aprovação.',
+      },
+      notion: {
+        tagline: 'Leia e edite suas páginas e bancos de dados do Notion',
+        description: 'Conecte seu workspace do Notion para que o ScaleOS pesquise, leia e edite as páginas e bancos de dados compartilhados. Crie agentes para rascunhar documentos, organizar notas ou gerenciar registros.',
+      },
+      scheduler: {
+        tagline: 'Execute tarefas do espaço de trabalho em horários programados',
+        description: 'Registre tarefas recorrentes e de execução única.',
+      },
+      slack: {
+        tagline: 'Leia canais, DMs e threads',
+        description: 'Conecte sua conta Slack para dar ao ScaleOS acesso somente leitura aos workspaces, canais, mensagens diretas e threads que você pode ver. Crie agentes para resumir conversas, monitorar canais ou pesquisar seu histórico do Slack.',
+      },
+      spotify: {
+        tagline: 'Gerencie playlists, sua biblioteca e a reprodução',
+        description: 'Conecte sua conta Spotify para que o ScaleOS pesquise o catálogo, leia e edite sua biblioteca e playlists e controle a reprodução nos seus dispositivos. Conceda acesso à conta inteira ou limite um Gadget a uma única playlist.',
+      },
+      supabase: {
+        tagline: 'Consulte o Postgres, inspecione o schema e gerencie projetos',
+        description: 'Conecte sua conta Supabase para que o ScaleOS execute SQL nos bancos dos seus projetos, explore o schema e inspecione Edge Functions e armazenamento nos projetos escolhidos.',
+      },
+      zoominfo: {
+        tagline: 'Pesquise e enriqueça informações B2B de empresas e contatos',
+        description: 'Conecte sua conta ZoomInfo para que o ScaleOS resolva valores de filtros, pesquise empresas, contatos, sinais de intenção, scoops e notícias e enriqueça os registros encontrados com detalhes completos. A pesquisa é gratuita; o enriquecimento consome créditos do ZoomInfo. Crie agentes para montar listas de contas-alvo, pesquisar contas e priorizar abordagens com base em sinais de compra.',
+      },
     },
     google: {
       tagline: 'Rascunhe respostas, edite documentos, leia planilhas, pesquise no Drive, gerencie calendários e analise dados',

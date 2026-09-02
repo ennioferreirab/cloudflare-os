@@ -19,10 +19,13 @@ import { AccountChooser, AccountOption } from './gatekeeper-modal/AccountChooser
 import ResourceConfiguratorHost from './ResourceConfiguratorHost'
 import { WorkshopButton, WorkshopIconButton } from './components/WorkshopControls'
 import { MENU_CONTENT, MENU_ITEM, MENU_ITEM_DANGER } from './components/menuStyles'
+import { localizeBlueprintPresentation } from './components/format/localizedFormats'
 import { useDocumentTitle } from './useDocumentTitle'
 import { AccountsSubscriberAdapter } from './accountsSubscriber'
 import { useDialogSelectPortalContainer } from './useDialogSelectPortalContainer'
 import { useLocale } from './i18n'
+import { localizeGatekeeperPresentation } from './localizedGatekeepers'
+import { useSiteName } from './ServerConfigContext'
 
 interface Props {
   rpcStub: RpcStub<PublicApi>
@@ -38,11 +41,15 @@ export default function BlueprintLandingPage({ rpcStub }: Props) {
   const navigate = useNavigate()
   const router = useRouter()
   const { isAuthenticated, authenticatedApi, isLoading: authLoading, login } = useAuth(rpcStub)
-  const { t, formatDate } = useLocale()
+  const { t, formatDate, locale } = useLocale()
+  const siteName = useSiteName()
   const toasts = useKumoToastManager()
 
   const [blueprint, setBlueprint] = useState<BlueprintPublicInfo | null>(null)
-  useDocumentTitle(blueprint?.metadata.title)
+  const presentedBlueprint = blueprint
+    ? localizeBlueprintPresentation(blueprint, locale)
+    : null
+  useDocumentTitle(presentedBlueprint?.metadata.title)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -86,9 +93,22 @@ export default function BlueprintLandingPage({ rpcStub }: Props) {
   const [addingToLibrary, setAddingToLibrary] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [removingFromLibrary, setRemovingFromLibrary] = useState(false)
+  const localizedVendors = useMemo(
+    () => vendors.map(vendor => ({
+      ...vendor,
+      ...localizeGatekeeperPresentation(
+        vendor.id,
+        vendor.description,
+        vendor.supportedResources,
+        siteName,
+        t,
+      ),
+    })),
+    [siteName, t, vendors],
+  )
   const vendorById = useMemo(
-    () => new Map(vendors.map(v => [v.id.toLowerCase(), v])),
-    [vendors],
+    () => new Map(localizedVendors.map(v => [v.id.toLowerCase(), v])),
+    [localizedVendors],
   )
   // Fetch blueprint metadata.
   useEffect(() => {
@@ -754,7 +774,7 @@ export default function BlueprintLandingPage({ rpcStub }: Props) {
     )
   }
 
-  let meta = blueprint.metadata
+  let meta = localizeBlueprintPresentation(blueprint, locale).metadata
   let bindingEntries = Object.entries(meta.bindings)
   let activeBinding = activeBindingName ? meta.bindings[activeBindingName] : undefined
   let readyCount = bindingEntries.filter(([name]) => draftAssignments[name]).length
@@ -1039,7 +1059,7 @@ export default function BlueprintLandingPage({ rpcStub }: Props) {
                   value={bindingForm[activeBindingName] || {}}
                   models={models}
                   authenticatedApi={authenticatedApi}
-                  vendors={vendors}
+                  vendors={localizedVendors}
                   accounts={accounts}
                   connectingVendor={connectingVendor}
                   reconnectingAccountId={reconnectingAccountId}

@@ -18,6 +18,8 @@ import { WorkshopButton } from './components/WorkshopControls'
 import Avatar from './components/Avatar'
 import { AccountsSubscriberAdapter } from './accountsSubscriber'
 import { useLocale } from './i18n'
+import { localizeGatekeeperPresentation } from './localizedGatekeepers'
+import { useSiteName } from './ServerConfigContext'
 
 // Shown when a non-owner opens a shared Gadget that reads data through one or more gatekeeper
 // bindings, and they haven't yet chosen which of their own connected accounts to use for each one.
@@ -82,6 +84,7 @@ export default function ObserverConfigModal({
   onCancel,
 }: ObserverConfigModalProps) {
   const { t } = useLocale()
+  const siteName = useSiteName()
   const toasts = useKumoToastManager()
 
   const [accounts, setAccounts] = useState<Map<number, AccountInfo>>(new Map())
@@ -107,9 +110,23 @@ export default function ObserverConfigModal({
     const subscriber = new AccountsSubscriberAdapter({
       add({ id, description, vendor, supportedResources, credentialsValid, vendorId }) {
         if (cancelled) return
+        const localized = localizeGatekeeperPresentation(
+          vendorId,
+          vendor,
+          supportedResources,
+          siteName,
+          t,
+        )
         setAccounts(prev => {
           const next = new Map(prev)
-          next.set(id, { id, description, vendor, vendorId, supportedResources, credentialsValid })
+          next.set(id, {
+            id,
+            description,
+            vendor: localized.description,
+            vendorId,
+            supportedResources: localized.supportedResources,
+            credentialsValid,
+          })
           return next
         })
         if (credentialsValid) {
@@ -151,7 +168,7 @@ export default function ObserverConfigModal({
       cancelled = true
       subscription[Symbol.dispose]()
     }
-  }, [authenticatedApi, t])
+  }, [authenticatedApi, siteName, t])
 
   // ── load vendor metadata for display and resource-scope resolution ─────────────
   useEffect(() => {
@@ -163,7 +180,16 @@ export default function ObserverConfigModal({
       .then(([vendors, addable]) => {
         if (cancelled) return
         const map = new Map<string, GatekeeperVendorInfo>()
-        for (const vendor of [...vendors, ...addable]) map.set(vendor.id, vendor)
+        for (const vendor of [...vendors, ...addable]) {
+          const localized = localizeGatekeeperPresentation(
+            vendor.id,
+            vendor.description,
+            vendor.supportedResources,
+            siteName,
+            t,
+          )
+          map.set(vendor.id, { ...vendor, ...localized })
+        }
         setVendorsById(map)
         setVendorsReady(true)
       })
@@ -172,7 +198,7 @@ export default function ObserverConfigModal({
         if (!cancelled) setVendorsReady(true)
       })
     return () => { cancelled = true }
-  }, [authenticatedApi])
+  }, [authenticatedApi, siteName, t])
 
   // ── keep choices in sync with the available accounts ──────────────────────────
   // Default each binding to its first matching account, and drop a choice whose account has
