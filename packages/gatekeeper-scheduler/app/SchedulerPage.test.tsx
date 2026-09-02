@@ -2,10 +2,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ManagementSchedule } from "../src/management-types";
-import SchedulerPage, {
-  CREATE_SCHEDULE_PROMPT,
-  type ScheduleManagementClient,
-} from "./SchedulerPage";
+import SchedulerPage, { type ScheduleManagementClient } from "./SchedulerPage";
+import { schedulerCopy } from "./locale";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -110,7 +108,27 @@ describe("SchedulerPage", () => {
     await click('[data-action="open-schedule"]', "Weekly roundup");
     expect(host.openWorkspace).toHaveBeenLastCalledWith(ROUNDUP_WORKSPACE, 2);
     await click('[data-action="create-schedule"]');
-    expect(host.openPrompt).toHaveBeenCalledWith(CREATE_SCHEDULE_PROMPT);
+    expect(host.openPrompt).toHaveBeenCalledWith(schedulerCopy("en").createSchedulePrompt);
+  });
+
+  it("renders and opens starter prompts in Brazilian Portuguese", async () => {
+    const list = vi.fn<ScheduleManagementClient["list"]>(async () => ({ schedules: [active] }));
+    const host = hostProps();
+    await render(<SchedulerPage api={{ list }} locale="pt-BR" {...host} />);
+
+    expect(container!.textContent).toContain("Tarefas agendadas");
+    expect(container!.textContent).toContain("Precisam de atenção");
+    expect(container!.textContent).toContain("Resumo diário");
+    expect(container!.textContent).toContain("Dias úteis às 8h");
+
+    await click('[data-action="create-schedule"]');
+    expect(host.openPrompt).toHaveBeenLastCalledWith(
+      schedulerCopy("pt-BR").createSchedulePrompt,
+    );
+    await click("button", "Resumo diário");
+    expect(host.openPrompt).toHaveBeenLastCalledWith(
+      schedulerCopy("pt-BR").starters[0].prompt,
+    );
   });
 
   it("expands the failure reason on needs-attention rows only", async () => {

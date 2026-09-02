@@ -34,6 +34,27 @@ describe("formatCadence", () => {
       }),
     ).toBe("Once on Jul 30, 2026 at 9:00 AM");
   });
+
+  it("describes schedules in Brazilian Portuguese", () => {
+    expect(formatCadence(
+      { kind: "interval", everyMs: 3_600_000, anchorMs: 0 },
+      "pt-BR",
+    )).toBe("A cada hora");
+    expect(
+      formatCadence({
+        kind: "calendar",
+        timeZone: "America/Sao_Paulo",
+        rule: {
+          freq: "weekly",
+          interval: 1,
+          byDay: ["MO", "TU", "WE", "TH", "FR"],
+          hour: 8,
+          minute: 0,
+          anchorMs: 0,
+        },
+      }, "pt-BR"),
+    ).toBe("Dias úteis às 8:00");
+  });
 });
 
 describe("formatTiming", () => {
@@ -83,6 +104,22 @@ describe("formatTiming", () => {
     };
 
     expect(formatTiming(retrying, now).relative).toBe("Next run in 5 minutes (retry)");
+  });
+
+  it("localizes status and diagnostics in Brazilian Portuguese", () => {
+    const now = Date.UTC(2026, 6, 30, 12);
+    const dead: ManagementSchedule = {
+      ...common,
+      cadence: { kind: "interval", everyMs: 3_600_000, anchorMs: 0 },
+      status: "dead",
+      failedAt: now - 60_000,
+      failureCode: "authorization_failed",
+    };
+
+    expect(formatTiming(dead, now, "pt-BR")).toMatchObject({
+      relative: "Falhou há 1 minuto",
+      diagnostic: "A autorização falhou após várias tentativas.",
+    });
   });
 });
 
