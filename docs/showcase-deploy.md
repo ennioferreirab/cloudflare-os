@@ -19,7 +19,7 @@ Set these values on `ennioferreirab/cloudflare-os`:
 - Repository secret `CLOUDFLARE_API_TOKEN`: a token based on Cloudflare's **Edit Cloudflare
   Workers** template, scoped to the target account and the `scale.pro` zone.
 - Repository variable `CLOUDFLARE_ACCOUNT_ID`: the target account's 32-character ID.
-- Repository variable `SHOWCASE_DOMAIN`: `os.scale.pro`.
+- Repository variable `SHOWCASE_DOMAIN`: `os.scaleos.pro`.
 
 Every push to `main` runs `.github/workflows/deploy-showcase.yml`. A manual run is also available
 through `workflow_dispatch`. Deployments are serialized and publish the router last.

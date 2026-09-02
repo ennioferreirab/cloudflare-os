@@ -20,7 +20,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy os.scale.pro
+    name: Deploy os.scaleos.pro
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
