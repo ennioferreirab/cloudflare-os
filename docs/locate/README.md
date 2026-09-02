@@ -37,15 +37,15 @@ O kernel em `packages/workshop-backend` não foi alterado. As mudanças comparti
 
 Capturas principais:
 
-- [`final-guardioes-scaleos.png`](../../output/playwright/locate/final-guardioes-scaleos.png)
-- [`playbooks-pt-br.png`](../../output/playwright/locate/playbooks-pt-br.png)
-- [`google-guardiao-pt-br.png`](../../output/playwright/locate/google-guardiao-pt-br.png)
-- [`login-scaleos-pt-br.png`](../../output/playwright/locate/login-scaleos-pt-br.png)
-- [`home-mobile-pt-br.png`](../../output/playwright/locate/home-mobile-pt-br.png)
+- [`final-guardioes-scaleos.png`](./screenshots/final-guardioes-scaleos.png)
+- [`playbooks-pt-br.png`](./screenshots/playbooks-pt-br.png)
+- [`google-guardiao-pt-br.png`](./screenshots/google-guardiao-pt-br.png)
+- [`login-scaleos-pt-br.png`](./screenshots/login-scaleos-pt-br.png)
+- [`home-mobile-pt-br.png`](./screenshots/home-mobile-pt-br.png)
 
 ## Estado do Git
 
-A implementação está no branch local `ennioferreirab/start-cloudflare-os`. O único remoto configurado é `origin`, apontando para `cloudflare/cloudflare-os`; nenhum fork remoto foi criado e nenhum push foi realizado nesta entrega.
+A implementação está no branch `start-cloudflare-os` do fork `ennioferreirab/cloudflare-os`, com PR aberto contra a `main` do mesmo fork.
 
 ## Documentos
 

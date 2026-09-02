@@ -62,8 +62,8 @@ Status: decisões aplicadas e validadas.
 
 **Motivo:** localização e branding dependem simultaneamente de tipos, geração de artefatos, runtime, persistência e fidelidade visual.
 
-## ADR-011 — Publicação separada
+## ADR-011 — Publicação no fork
 
-**Decisão:** manter a implementação no branch local e não criar/pushar um fork remoto implicitamente.
+**Decisão:** publicar `start-cloudflare-os` em `ennioferreirab/cloudflare-os` e abrir o PR contra a `main` desse fork, sem direcioná-lo ao repositório upstream.
 
-**Motivo:** a publicação altera estado externo e exige uma decisão operacional separada; o estado atual do Git fica documentado sem presumir credenciais ou destino.
+**Motivo:** mantém a adaptação ScaleOS isolada no fork definido para a entrega.
