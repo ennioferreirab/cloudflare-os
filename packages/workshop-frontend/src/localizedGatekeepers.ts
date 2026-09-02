@@ -76,6 +76,9 @@ export function localizeGatekeeperPresentation(
   return {
     description: {
       ...description,
+      displayName: normalizedVendorId === 'scheduler'
+        ? t(`${vendorPath}.displayName`)
+        : description.displayName,
       tagline,
       description: t(`${vendorPath}.description`),
     },

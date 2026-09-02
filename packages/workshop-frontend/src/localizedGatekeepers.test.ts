@@ -20,6 +20,12 @@ const mcpPortal: VendorDescription = {
   tagline: 'Connect a server behind example.com',
   description: 'Original description',
 }
+const scheduler: VendorDescription = {
+  displayName: 'Scheduled Tasks',
+  url: 'https://workers.cloudflare.com',
+  tagline: 'Original tagline',
+  description: 'Original description',
+}
 const resources: SupportedResource[] = [{
   title: 'Gmail Mailbox',
   description: 'Original Gmail description',
@@ -35,6 +41,7 @@ const translations: Record<string, string> = {
   'connections.vendors.github.description': 'Conecte o GitHub ao ScaleOS.',
   'connections.vendors.mcpPortal.taglineConfigured': 'Conecte um servidor por trás de example.com',
   'connections.vendors.mcpPortal.description': 'Use os servidores MCP aprovados.',
+  'connections.vendors.scheduler.displayName': 'Tarefas Agendadas',
 }
 
 const t = (key: string) => translations[key] ?? key
@@ -83,5 +90,10 @@ describe('localizeGatekeeperPresentation', () => {
       tagline: 'Conecte um servidor por trás de example.com',
       description: 'Use os servidores MCP aprovados.',
     })
+  })
+
+  it('localizes the Scheduler display name', () => {
+    const result = localizeGatekeeperPresentation('scheduler', scheduler, [], 'ScaleOS', t)
+    expect(result.description.displayName).toBe('Tarefas Agendadas')
   })
 })
