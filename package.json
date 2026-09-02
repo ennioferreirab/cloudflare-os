@@ -12,6 +12,8 @@
     "preview:deploy": "node scripts/preview/preview.ts deploy",
     "preview:delete": "node scripts/preview/preview.ts delete",
     "preview:sweep": "node scripts/preview/preview.ts sweep",
+    "showcase:config": "node scripts/showcase/config.ts",
+    "showcase:deploy": "node scripts/showcase/deploy.ts",
     "dev-client": "cd packages/workshop-frontend && pnpm run dev",
     "dev-server": "node scripts/run-dev-server.ts",
     "clean": "vp run -r clean",

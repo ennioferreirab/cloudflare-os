@@ -1,0 +1,50 @@
+name: Deploy ScaleOS Showcase
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scaleos-showcase-production
+  # The router is deployed last; never interrupt a multi-Worker rollout halfway through.
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24.19.0"
+  SHOWCASE_WORKER_PREFIX: "scaleos-showcase"
+
+jobs:
+  deploy:
+    name: Deploy os.scale.pro
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: showcase
+      url: https://${{ vars.SHOWCASE_DOMAIN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up Vite+, Node.js and dependencies
+        uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754 # v1.18.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: true
+          run-install: true
+
+      - name: Deploy persistent showcase
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          SHOWCASE_DOMAIN: ${{ vars.SHOWCASE_DOMAIN }}
+        run: pnpm showcase:deploy
