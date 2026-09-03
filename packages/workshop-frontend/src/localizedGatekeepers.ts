@@ -65,12 +65,16 @@ export function localizeGatekeeperPresentation(
   if (!copyKey) return { description, supportedResources }
 
   const vendorPath = `connections.vendors.${copyKey}`
+  const isScaleOsVault = normalizedVendorId === 'mcp-portal' &&
+    description.logo?.url === '/assets/scaleos/brand/scaleos-icon-40.png'
   const tagline = normalizedVendorId === 'mcp-portal'
-    ? description.tagline?.startsWith('Connect a server behind ')
-      ? t(`${vendorPath}.taglineConfigured`, {
-        host: description.tagline.slice('Connect a server behind '.length),
-      })
-      : t(`${vendorPath}.taglineUnavailable`)
+    ? isScaleOsVault
+      ? t(`${vendorPath}.vaultTagline`)
+      : description.tagline?.startsWith('Connect a server behind ')
+        ? t(`${vendorPath}.taglineConfigured`, {
+          host: description.tagline.slice('Connect a server behind '.length),
+        })
+        : t(`${vendorPath}.taglineUnavailable`)
     : t(`${vendorPath}.tagline`)
 
   return {
@@ -80,7 +84,7 @@ export function localizeGatekeeperPresentation(
         ? t(`${vendorPath}.displayName`)
         : description.displayName,
       tagline,
-      description: t(`${vendorPath}.description`),
+      description: t(`${vendorPath}.${isScaleOsVault ? 'vaultDescription' : 'description'}`),
     },
     supportedResources,
   }

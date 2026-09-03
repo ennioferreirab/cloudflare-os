@@ -20,6 +20,13 @@ const mcpPortal: VendorDescription = {
   tagline: 'Connect a server behind example.com',
   description: 'Original description',
 }
+const scaleOsVault: VendorDescription = {
+  displayName: 'ScaleOS Vault',
+  url: 'https://scaleos.pro',
+  logo: { url: '/assets/scaleos/brand/scaleos-icon-40.png' },
+  tagline: 'Backend copy',
+  description: 'Backend description',
+}
 const scheduler: VendorDescription = {
   displayName: 'Scheduled Tasks',
   url: 'https://workers.cloudflare.com',
@@ -41,6 +48,8 @@ const translations: Record<string, string> = {
   'connections.vendors.github.description': 'Conecte o GitHub ao ScaleOS.',
   'connections.vendors.mcpPortal.taglineConfigured': 'Conecte um servidor por trás de example.com',
   'connections.vendors.mcpPortal.description': 'Use os servidores MCP aprovados.',
+  'connections.vendors.mcpPortal.vaultTagline': 'Conecte vários Vaults',
+  'connections.vendors.mcpPortal.vaultDescription': 'Escolha os Vaults de cada sessão.',
   'connections.vendors.scheduler.displayName': 'Tarefas Agendadas',
 }
 
@@ -89,6 +98,18 @@ describe('localizeGatekeeperPresentation', () => {
     expect(result.description).toMatchObject({
       tagline: 'Conecte um servidor por trás de example.com',
       description: 'Use os servidores MCP aprovados.',
+    })
+  })
+
+  it('uses the ScaleOS Vault copy when the portal has the ScaleOS icon', () => {
+    const result = localizeGatekeeperPresentation(
+      'mcp-portal', scaleOsVault, [], 'ScaleOS', t,
+    )
+    expect(result.description).toMatchObject({
+      displayName: 'ScaleOS Vault',
+      tagline: 'Conecte vários Vaults',
+      description: 'Escolha os Vaults de cada sessão.',
+      logo: { url: '/assets/scaleos/brand/scaleos-icon-40.png' },
     })
   })
 

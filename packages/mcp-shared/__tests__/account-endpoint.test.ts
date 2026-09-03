@@ -95,6 +95,44 @@ class UnconfiguredTokenAccount extends McpAccountBase<AccountEnv> {
   }
 }
 
+class UserSuppliedTokenAccount extends McpAccountBase<AccountEnv> {
+  activeToken: string | null = null;
+  stagedToken: string | null = null;
+  failProbe = false;
+  probedToken: string | null = null;
+
+  protected baseUrl(): string { return "https://gatekeeper.example"; }
+  protected log(): never { return testLog as never; }
+  protected mintAccount(): never { return {} as never; }
+  protected override staticToken(_server: ConnectedServer): string | null {
+    return this.stagedToken ?? this.activeToken;
+  }
+  protected override async probe(server: ConnectedServer): Promise<never> {
+    this.probedToken = this.staticToken(server);
+    if (this.failProbe) throw new Error("candidate refused");
+    return { serverInfo: { name: "Vault" } } as never;
+  }
+
+  connectWithToken(
+    nonce: string,
+    target: ConnectedServer,
+    candidate: string,
+  ) {
+    return this.beginConnectWithPreissuedCredential(nonce, target, {
+      stage: () => { this.stagedToken = candidate; },
+      commit: () => {
+        this.activeToken = candidate;
+        this.stagedToken = null;
+      },
+      discard: () => { this.stagedToken = null; },
+    });
+  }
+
+  isWaiting(nonce: string): boolean {
+    return this.awaitingSelection(nonce);
+  }
+}
+
 class AuthChallengeAccount extends McpAccountBase<AccountEnv> {
   protected baseUrl(): string { return "https://gatekeeper.example"; }
   protected log(): never { return testLog as never; }
@@ -369,6 +407,35 @@ describe("connect initiation nonce", () => {
     expect(context.storage.kv.get("server")).toBeUndefined();
     expect(context.storage.kv.get("connected")).toBeUndefined();
     expect(account.isWaiting(nonce)).toBe(true);
+  });
+
+  it("commits a user-supplied token only after probing and keeps the old token on failure", async () => {
+    const context = fakeContext();
+    const complete = vi.fn(async () => undefined);
+    const account = new UserSuppliedTokenAccount(context as never, {});
+    const target = {
+      ...server("https://vault.example/mcp"), auth: "token" as const,
+      provenance: "deployment" as const,
+    };
+
+    const firstNonce = "1".repeat(64);
+    await account.setCallback({ complete } as never, firstNonce);
+    await expect(account.connectWithToken(firstNonce, target, "first-token"))
+      .resolves.toEqual({ kind: "done" });
+    expect(account.probedToken).toBe("first-token");
+    expect(account.activeToken).toBe("first-token");
+    expect(account.stagedToken).toBeNull();
+    expect(complete).toHaveBeenCalledOnce();
+
+    const rotateNonce = "2".repeat(64);
+    await account.prepareReconnect(rotateNonce);
+    account.failProbe = true;
+    await expect(account.connectWithToken(rotateNonce, target, "rejected-token"))
+      .rejects.toThrow("candidate refused");
+    expect(account.probedToken).toBe("rejected-token");
+    expect(account.activeToken).toBe("first-token");
+    expect(account.stagedToken).toBeNull();
+    expect(account.isWaiting(rotateNonce)).toBe(true);
   });
 
   it("adopts OAuth but refuses a private authorization redirect", async () => {

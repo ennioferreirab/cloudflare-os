@@ -11,6 +11,7 @@ import { createLogger } from "@gadgets/backend-utils/logger";
 import {
   matchesResourceUrlPattern,
   stripTrailingSlashes,
+  type AccountDescription,
   type AvatarImage,
   type Gatekeeper,
   type GatekeeperConnectCallback,
@@ -31,7 +32,11 @@ import { generateSessionTypes, sessionTypeName } from "@gadgets/mcp-shared/schem
 import { McpAccountBase, type ConnectedServer, type ConnectOutcome }
   from "@gadgets/mcp-shared/account";
 import { generateNonce } from "@gadgets/mcp-shared/connect-nonce";
-import { withClient, type ConnectionAccount } from "@gadgets/mcp-shared/connection";
+import {
+  withClient,
+  type ConnectionAccount,
+  type McpConnection,
+} from "@gadgets/mcp-shared/connection";
 import { McpSessionBase } from "@gadgets/mcp-shared/session";
 import { McpFacetBase } from "@gadgets/mcp-shared/facet";
 import {
@@ -81,6 +86,11 @@ import { MCP_BASE_TYPES } from "@gadgets/mcp-shared/base-types";
 import PORTAL_LOGO_SVG from "./portal-logo.svg";
 import MCP_SERVER_CONFIGURATOR_HTML from "./generated/server-configurator-ui.txt";
 import type { McpServerConfiguratorRpc } from "./configurator/server-configurator-types";
+import {
+  parseVaultTokenInput,
+  vaultTokenFormHtml,
+  type VaultTokenInput,
+} from "./vault-token-form.js";
 
 const VENDOR_ID = "mcp_portal";
 
@@ -98,10 +108,22 @@ const logger = createLogger<McpLogFields>({
 
 const PORTAL_LOGO_URL = `data:image/svg+xml,${encodeURIComponent(PORTAL_LOGO_SVG)}`;
 const PORTAL_AVATAR: AvatarImage = { url: PORTAL_LOGO_URL };
+const SCALEOS_AVATAR: AvatarImage = {
+  url: "/assets/scaleos/brand/scaleos-icon-40.png",
+};
 
 // Cloudflare orange, matching the Cloudflare Gateway glyph used as the mark. A deployment fronting
 // some other aggregator should change both together.
 const PORTAL_COLOR = "#f6821f";
+const SCALEOS_COLOR = "#ffffff";
+
+function portalAvatar(config: ReturnType<typeof readPortalConfig>): AvatarImage {
+  return config?.auth === "vault-token" ? SCALEOS_AVATAR : PORTAL_AVATAR;
+}
+
+function portalColor(config: ReturnType<typeof readPortalConfig>): string {
+  return config?.auth === "vault-token" ? SCALEOS_COLOR : PORTAL_COLOR;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -221,8 +243,8 @@ async function listAvailablePortalServers(
   return reconcilePortalServers(reported?.servers ?? [], index.tools);
 }
 
-// HTTP handler. There is no page asking which server to connect, since the endpoint is configured,
-// so the only browser round trip is the portal's own authorization.
+// The endpoint always comes from deployment configuration. OAuth/static portals continue directly;
+// ScaleOS Vault adds a nonce-bound form for the user's label and bearer token.
 
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -232,6 +254,9 @@ export default {
         ctx.exports.McpAccount.idFromString(id)),
       log: logger,
       connect: async (request, account, initiationNonce) => {
+        if (readPortalConfig(env)?.auth === "vault-token") {
+          return continueVaultTokenConnect(request, account, initiationNonce, env);
+        }
         if (request.method !== "GET") return new Response("Method Not Allowed", { status: 405 });
         return continueConnect(account, initiationNonce, env);
       },
@@ -267,6 +292,81 @@ async function continueConnect(
   return htmlResponse(SELF_CLOSING_HTML);
 }
 
+async function continueVaultTokenConnect(
+  request: Request,
+  account: DurableObjectStub<McpAccount>,
+  initiationNonce: string,
+  env: Env,
+): Promise<Response> {
+  const config = readPortalConfig(env);
+  if (!config || config.auth !== "vault-token") {
+    return htmlResponse(errorPageHtml(
+      "ScaleOS Vault não configurado",
+      "Peça ao administrador para revisar a configuração deste conector."), 503);
+  }
+
+  if (!(await account.isAwaitingVaultToken(initiationNonce))) {
+    return htmlResponse(INVALID_LINK_HTML, 400);
+  }
+
+  const current = await account.getVaultIdentity();
+  if (request.method === "GET") {
+    return htmlResponse(vaultTokenFormHtml({
+      actionUrl: request.url,
+      portalName: config.name,
+      label: current?.label,
+    }));
+  }
+  if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return htmlResponse(vaultTokenFormHtml({
+      actionUrl: request.url,
+      portalName: config.name,
+      label: current?.label,
+      error: "Não foi possível ler o formulário. Tente novamente.",
+    }), 400);
+  }
+
+  const parsed = parseVaultTokenInput(form);
+  if (!parsed.ok) {
+    return htmlResponse(vaultTokenFormHtml({
+      actionUrl: request.url,
+      portalName: config.name,
+      label: parsed.label,
+      error: parsed.error,
+    }), 400);
+  }
+
+  let outcome: ConnectOutcome;
+  try {
+    outcome = await account.beginVaultTokenConnect(
+      initiationNonce, parsed.value);
+  } catch {
+    logger.warn("vault token connect failed", {
+      event: "connect.vault-token.failed",
+      serverHost: hostOf(config.endpoint),
+    });
+    return htmlResponse(vaultTokenFormHtml({
+      actionUrl: request.url,
+      portalName: config.name,
+      label: parsed.value.label,
+      error: "O Vault recusou o token ou não respondeu. Confira o token e tente novamente.",
+    }), 502);
+  }
+
+  if (outcome.kind === "invalid") return htmlResponse(INVALID_LINK_HTML, 400);
+  if (outcome.kind === "redirect") {
+    return htmlResponse(errorPageHtml(
+      "Resposta inesperada",
+      "O ScaleOS Vault deve autenticar diretamente pelo token informado."), 502);
+  }
+  return htmlResponse(SELF_CLOSING_HTML);
+}
+
 // ---------------------------------------------------------------------------
 // Vendor
 
@@ -276,15 +376,21 @@ export class GatekeeperVendor extends WorkerEntrypoint<Env> implements Gatekeepe
     const config = readPortalConfig(this.env);
     return {
       displayName: config?.name ?? "Cloudflare MCP Server Portals",
-      url: "https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/",
-      logo: PORTAL_AVATAR,
-      color: PORTAL_COLOR,
+      url: config?.auth === "vault-token"
+        ? "https://scaleos.pro/"
+        : "https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/",
+      logo: portalAvatar(config),
+      color: portalColor(config),
       tagline: config
-        ? `Connect a server behind ${hostOf(config.endpoint)}`
+        ? config.auth === "vault-token"
+          ? "Conecte um ou mais Vaults com um token para cada Vault"
+          : `Connect a server behind ${hostOf(config.endpoint)}`
         : "No MCP server portal is configured",
-      description:
-        "Use the MCP servers this organization has approved, through its MCP server portal. Reads " +
-        "happen straight away. Anything that writes waits for your approval.",
+      description: config?.auth === "vault-token"
+        ? "Conecte cada ScaleOS Vault com seu próprio token. Você decide quais Vaults ficam " +
+          "disponíveis em cada sessão, e operações de escrita continuam exigindo aprovação."
+        : "Use the MCP servers this organization has approved, through its MCP server portal. " +
+          "Reads happen straight away. Anything that writes waits for your approval.",
     };
   }
 
@@ -318,11 +424,23 @@ export class GatekeeperVendor extends WorkerEntrypoint<Env> implements Gatekeepe
 // ---------------------------------------------------------------------------
 // Account DO — owns the endpoint choice and every credential for it.
 
+type StoredVaultCredential = {
+  accountKey: string;
+  credentialGeneration: number;
+  label: string;
+  token: string;
+};
+
+type VaultIdentity = Omit<StoredVaultCredential, "token">;
+
+const VAULT_CREDENTIAL_KEY = "vaultCredential";
+const STAGED_VAULT_CREDENTIAL_KEY = "stagedVaultCredential";
+
 /**
  * One connected portal, for one user. Nothing outside this object ever sees a credential.
  *
- * The endpoint is a deployment setting rather than user input, so the preissued token is the only
- * real addition: a portal may be fronted by one instead of using OAuth.
+ * The endpoint is a deployment setting rather than user input. Static portal credentials still
+ * come from deployment configuration; Vault-token accounts keep one user credential in this DO.
  */
 export class McpAccount extends McpAccountBase<Env> {
   protected baseUrl(): string {
@@ -338,11 +456,154 @@ export class McpAccount extends McpAccountBase<Env> {
     return this.ctx.exports.GatekeeperUserImpl({ props });
   }
 
+  override async beginConnect(
+    initiationNonce: string,
+    target: ConnectedServer | null,
+  ): Promise<ConnectOutcome> {
+    const outcome = await super.beginConnect(initiationNonce, target);
+    if (outcome.kind === "done" && readPortalConfig(this.env)?.auth !== "vault-token") {
+      this.deleteVaultCredentials();
+    }
+    return outcome;
+  }
+
+  override async acceptAuthCode(
+    code: string,
+    oauthNonce: string,
+    issuer?: string,
+  ): Promise<boolean> {
+    const accepted = await super.acceptAuthCode(code, oauthNonce, issuer);
+    if (accepted && readPortalConfig(this.env)?.auth !== "vault-token") {
+      this.deleteVaultCredentials();
+    }
+    return accepted;
+  }
+
+  /** Whether a nonce-bound Vault token form may still be submitted. */
+  async isAwaitingVaultToken(initiationNonce: string): Promise<boolean> {
+    return this.awaitingSelection(initiationNonce);
+  }
+
+  /** Non-secret identity for account presentation and binding isolation. */
+  async getVaultIdentity(): Promise<VaultIdentity | null> {
+    const credential = this.ctx.storage.kv.get<StoredVaultCredential>(VAULT_CREDENTIAL_KEY);
+    if (!credential) return null;
+    return {
+      accountKey: credential.accountKey,
+      credentialGeneration: credential.credentialGeneration,
+      label: credential.label,
+    };
+  }
+
+  /** Connects or rotates one user-entered ScaleOS Vault token. */
+  async beginVaultTokenConnect(
+    initiationNonce: string,
+    input: VaultTokenInput,
+  ): Promise<ConnectOutcome> {
+    const config = readPortalConfig(this.env);
+    if (config?.auth !== "vault-token") {
+      throw new Error("This deployment is not configured for user-entered Vault tokens.");
+    }
+    const server = portalServer(config);
+
+    const active = this.ctx.storage.kv.get<StoredVaultCredential>(VAULT_CREDENTIAL_KEY);
+    const previousServer = this.server();
+    const repointed = previousServer !== undefined &&
+      !sameEndpoint(previousServer.endpoint, server.endpoint);
+    const staged: StoredVaultCredential = {
+      accountKey: active?.accountKey ?? generateNonce().slice(0, 16),
+      credentialGeneration: (active?.credentialGeneration ?? 0) + 1,
+      label: input.label,
+      token: input.token,
+    };
+
+    return this.beginConnectWithPreissuedCredential(initiationNonce, server, {
+      stage: () => {
+        this.ctx.storage.kv.put(STAGED_VAULT_CREDENTIAL_KEY, staged);
+        if (repointed) this.ctx.storage.kv.delete(VAULT_CREDENTIAL_KEY);
+      },
+      commit: () => {
+        this.ctx.storage.kv.put(VAULT_CREDENTIAL_KEY, staged);
+        this.ctx.storage.kv.delete(STAGED_VAULT_CREDENTIAL_KEY);
+      },
+      discard: () => {
+        this.ctx.storage.kv.delete(STAGED_VAULT_CREDENTIAL_KEY);
+      },
+    });
+  }
+
+  override async prepareReconnect(initiationNonce: string): Promise<void> {
+    this.ctx.storage.kv.delete(STAGED_VAULT_CREDENTIAL_KEY);
+    await super.prepareReconnect(initiationNonce);
+  }
+
+  override async getConnection(endpoint: string): Promise<McpConnection> {
+    if (this.ctx.storage.kv.get(STAGED_VAULT_CREDENTIAL_KEY) !== undefined) {
+      throw new Error("This Vault token is being updated. Try again after reconnecting.");
+    }
+    return super.getConnection(endpoint);
+  }
+
+  async getVaultConnection(
+    endpoint: string,
+    credentialGeneration: number,
+  ): Promise<McpConnection> {
+    this.requireVaultCredentialGeneration(credentialGeneration);
+    return this.getConnection(endpoint);
+  }
+
+  async assertVaultConnectionCurrent(
+    endpoint: string,
+    generation: number,
+    credentialGeneration: number,
+  ): Promise<void> {
+    this.requireVaultCredentialGeneration(credentialGeneration);
+    await super.assertConnectionCurrent(endpoint, generation);
+  }
+
+  async setVaultMcpSessionId(
+    endpoint: string,
+    generation: number,
+    credentialGeneration: number,
+    previousSessionId: string | null,
+    sessionId: string | null,
+  ): Promise<boolean> {
+    this.requireVaultCredentialGeneration(credentialGeneration);
+    return super.setMcpSessionId(endpoint, generation, previousSessionId, sessionId);
+  }
+
+  async noteVaultCredentialsExpired(
+    endpoint: string,
+    generation: number,
+    credentialGeneration: number,
+  ): Promise<void> {
+    this.requireVaultCredentialGeneration(credentialGeneration);
+    await super.noteCredentialsExpired(endpoint, generation);
+  }
+
+  private requireVaultCredentialGeneration(expected: number): void {
+    const active = this.ctx.storage.kv.get<StoredVaultCredential>(VAULT_CREDENTIAL_KEY);
+    if (!active || active.credentialGeneration !== expected) {
+      throw new Error("This binding belongs to an older Vault token. Replace the binding.");
+    }
+  }
+
+  private deleteVaultCredentials(): void {
+    this.ctx.storage.kv.delete(VAULT_CREDENTIAL_KEY);
+    this.ctx.storage.kv.delete(STAGED_VAULT_CREDENTIAL_KEY);
+  }
+
   /**
    * Scoped to the endpoint this account is connected to, never merely to what configuration says
    * today. The rule lives beside the configuration it guards, in `portalTokenFor`.
    */
   protected override staticToken(server: ConnectedServer): string | null {
+    const config = readPortalConfig(this.env);
+    if (config?.auth === "vault-token" && sameEndpoint(config.endpoint, server.endpoint)) {
+      return this.ctx.storage.kv.get<StoredVaultCredential>(STAGED_VAULT_CREDENTIAL_KEY)?.token
+        ?? this.ctx.storage.kv.get<StoredVaultCredential>(VAULT_CREDENTIAL_KEY)?.token
+        ?? null;
+    }
     return portalTokenFor(this.env, server.endpoint);
   }
 }
@@ -361,7 +622,24 @@ export class GatekeeperUserImpl
   }
 
   protected [mcpGatekeeperUserContext]() {
-    return { account: this.#account(), avatar: PORTAL_AVATAR, baseUrl: getBaseUrl(this.env) };
+    return {
+      account: this.#account(),
+      avatar: portalAvatar(readPortalConfig(this.env)),
+      baseUrl: getBaseUrl(this.env),
+    };
+  }
+
+  override async describe(): Promise<AccountDescription> {
+    const config = readPortalConfig(this.env);
+    if (config?.auth !== "vault-token") return super.describe();
+    const identity = await this.#account().getVaultIdentity();
+    if (!identity) {
+      throw new Error("This ScaleOS Vault account needs to reconnect with its own token.");
+    }
+    return {
+      displayName: identity.label,
+      avatar: SCALEOS_AVATAR,
+    };
   }
 
   /**
@@ -384,6 +662,7 @@ export class GatekeeperUserImpl
     }
     const server = await this.#account().getServer();
     const resource = portalResource(config);
+    const vaultIdentity = await this.#account().getVaultIdentity();
 
     // The account connected to one portal and the deployment now names one; a repoint between the
     // two must surface as a reconnect. Otherwise this facet would be minted against the endpoint
@@ -395,6 +674,9 @@ export class GatekeeperUserImpl
     }
     if (portalAuthRequiresReconnect(server.auth, config.auth)) {
       throw new Error("This deployment's portal authentication changed. Reconnect the account.");
+    }
+    if ((config.auth === "vault-token") !== (vaultIdentity !== null)) {
+      throw new Error("This portal authentication changed. Reconnect the account.");
     }
 
     // The account holds credentials for one portal, so a resource URL naming any other endpoint is
@@ -422,6 +704,9 @@ export class GatekeeperUserImpl
       serverName: config.name,
       scopeServerName: upstream?.name ?? scope.serverId,
       scope,
+      vaultAccountKey: vaultIdentity?.accountKey,
+      vaultCredentialGeneration: vaultIdentity?.credentialGeneration,
+      vaultLabel: vaultIdentity?.label,
     };
     return { class: this.ctx.exports.McpGatekeeperImpl({ props }), resource };
   }
@@ -436,6 +721,56 @@ export class GatekeeperUserImpl
   @skipRpcValidation()
   async getVerifier(): Promise<Fetcher<GatekeeperUserVerifier>> {
     return this.ctx.exports.McpPortalVerifier({});
+  }
+}
+
+type McpCredentialAccountProps = {
+  accountObjectId: string;
+  credentialGeneration: number;
+};
+
+/**
+ * Narrows the ordinary MCP connection API to the exact Vault credential generation captured by a
+ * binding. A token replacement therefore invalidates old bindings instead of retargeting them.
+ */
+@validateRpc()
+export class McpCredentialAccount
+  extends WorkerEntrypoint<Env, McpCredentialAccountProps>
+  implements ConnectionAccount {
+
+  #account(): DurableObjectStub<McpAccount> {
+    return this.ctx.exports.McpAccount.get(
+      this.ctx.exports.McpAccount.idFromString(this.ctx.props.accountObjectId));
+  }
+
+  async getConnection(endpoint: string): Promise<McpConnection> {
+    return this.#account().getVaultConnection(
+      endpoint, this.ctx.props.credentialGeneration);
+  }
+
+  async assertConnectionCurrent(endpoint: string, generation: number): Promise<void> {
+    await this.#account().assertVaultConnectionCurrent(
+      endpoint, generation, this.ctx.props.credentialGeneration);
+  }
+
+  async setMcpSessionId(
+    endpoint: string,
+    generation: number,
+    previousSessionId: string | null,
+    sessionId: string | null,
+  ): Promise<boolean> {
+    return this.#account().setVaultMcpSessionId(
+      endpoint,
+      generation,
+      this.ctx.props.credentialGeneration,
+      previousSessionId,
+      sessionId,
+    );
+  }
+
+  async noteCredentialsExpired(endpoint: string, generation: number): Promise<void> {
+    await this.#account().noteVaultCredentialsExpired(
+      endpoint, generation, this.ctx.props.credentialGeneration);
   }
 }
 
@@ -532,6 +867,10 @@ type McpGatekeeperImplProps = {
   scopeServerName?: string;
   // How much of one upstream server this binding may call.
   scope: ToolScope & { serverId: string };
+  // Present only for per-Vault user tokens. All fields are non-secret presentation or version data.
+  vaultAccountKey?: string;
+  vaultCredentialGeneration?: number;
+  vaultLabel?: string;
 };
 
 export class McpGatekeeperImpl
@@ -546,6 +885,14 @@ export class McpGatekeeperImpl
   }
 
   protected account(): ConnectionAccount {
+    if (this.ctx.props.vaultCredentialGeneration !== undefined) {
+      return this.ctx.exports.McpCredentialAccount({
+        props: {
+          accountObjectId: this.ctx.props.accountObjectId,
+          credentialGeneration: this.ctx.props.vaultCredentialGeneration,
+        },
+      });
+    }
     return this.ctx.exports.McpAccount.get(
       this.ctx.exports.McpAccount.idFromString(this.ctx.props.accountObjectId));
   }
@@ -564,7 +911,8 @@ export class McpGatekeeperImpl
 
   // How this binding's breadth reads to a human, for approval prompts and the bindings list.
   #scopeLabel(): string {
-    const { scope, serverName, scopeServerName } = this.ctx.props;
+    const { scope, serverName, scopeServerName, vaultLabel } = this.ctx.props;
+    if (vaultLabel) return `${serverName} / ${vaultLabel}`;
     return `${serverName} / ${scopeServerName ?? scope.serverId}`;
   }
 
@@ -600,7 +948,8 @@ export class McpGatekeeperImpl
   // server produce the same id. `sessionTypeName` is what separates them, from the scoped resource
   // URL.
   #bindingId(): string {
-    const { scope, serverId } = this.ctx.props;
+    const { scope, serverId, vaultAccountKey } = this.ctx.props;
+    if (vaultAccountKey) return `vault-${vaultAccountKey}`;
     return `${serverId}-${scope.serverId}`;
   }
 
@@ -610,7 +959,9 @@ export class McpGatekeeperImpl
    * merely because both portals expose a tool with the same name.
    */
   protected get actionScopeTag(): string {
-    return `mcp-portal:${endpointTag(this.ctx.props.endpoint)}:${this.#bindingId()}`;
+    const generation = this.ctx.props.vaultCredentialGeneration;
+    const credential = generation === undefined ? "" : `:${generation}`;
+    return `mcp-portal:${endpointTag(this.ctx.props.endpoint)}:${this.#bindingId()}${credential}`;
   }
 
   async getTypeScriptTypes(): Promise<string> {

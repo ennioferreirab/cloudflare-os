@@ -125,6 +125,11 @@ export function buildShowcaseConfigs({
       config.vars = {
         ...config.vars,
         BASE_URL: `${origin}/gatekeeper/${gatekeeperShortName(pkg.name)}`,
+        ...(pkg.name === "gatekeeper-mcp-portal" ? {
+          MCP_PORTAL_URL: "https://vault.scaleos.pro/mcp",
+          MCP_PORTAL_NAME: "ScaleOS Vault",
+          MCP_PORTAL_AUTH: "vault-token",
+        } : {}),
       };
     } else if (pkg.name === "workshop-backend") {
       config.vars = { ...config.vars, PUBLIC_BASE_URL: origin };

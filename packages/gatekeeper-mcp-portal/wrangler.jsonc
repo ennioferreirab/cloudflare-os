@@ -43,8 +43,9 @@
   //     "MCP Server Portal (<host>)".
   //
   //   MCP_PORTAL_AUTH
-  //     "oauth" (default), "none", or "token". For "token", the bearer is the MCP_PORTAL_TOKEN
-  //     secret.
+  //     "oauth" (default), "none", "token", or "vault-token". For "token", the bearer is the
+  //     deployment's MCP_PORTAL_TOKEN secret. "vault-token" asks each user for one ScaleOS Vault
+  //     token per connected account and never reads MCP_PORTAL_TOKEN.
   //
   //   MCP_PORTAL_TRUST_ANNOTATIONS
   //     "true" to let tool annotations from behind this portal drive auto-approval. Off by default:
