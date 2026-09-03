@@ -117,7 +117,9 @@ export type ConnectOutcome =
  * The base account claims the connect nonce before calling `stage`, probes with the staged token,
  * then calls `commit` before publishing the account to the Workshop. A failed attempt calls
  * `discard`, leaving an existing credential untouched. All three operations must be synchronous
- * Durable Object storage mutations and must never log or return the credential.
+ * Durable Object storage mutations and must never log or return the credential. During an endpoint
+ * repoint, `stage` must retain the active credential and `staticToken()` must serve the candidate
+ * only to the target endpoint; the base may restore the previous server when validation fails.
  */
 export type PreissuedCredentialAttempt = {
   /** Make the candidate credential available to `staticToken()`. */
@@ -374,6 +376,16 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
       });
     }
 
+    let credentialCommitted = false;
+    const discardAttempt = () => {
+      attempt?.discard();
+      // The old generation is already fenced, and the connector keeps its active credential until
+      // commit, so restoring the old server cannot retarget an in-flight operation or a new token.
+      if (attempt && endpointChanged && !credentialCommitted && existing) {
+        this.ctx.storage.kv.put("server", existing);
+      }
+    };
+
     const log = this.log().with({
       serverId: server.serverId,
       serverHost: hostOf(server.endpoint),
@@ -387,7 +399,7 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
     // with the misconfiguration surfacing far from the setting that caused it. Refused here, and
     // the form stays open so an administrator can supply the token and retry.
     if (server.auth === "token" && this.staticToken(server) === null) {
-      attempt?.discard();
+      discardAttempt();
       this.restoreSelection(initiationNonce);
       throw new Error(
         `No preissued token is configured for "${server.serverName}" on this deployment, so it ` +
@@ -409,11 +421,12 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
         server.auth === "token" ? server : { ...server, auth: "none" };
       this.ctx.storage.kv.put("server", connected);
       attempt?.commit();
+      credentialCommitted = attempt !== undefined;
       await this.complete(connected, info, generation);
       log.info("connected without authorization", { event: "connect.completed" });
       return { kind: "done" };
     } catch (err) {
-      attempt?.discard();
+      discardAttempt();
       if (!(err instanceof McpAuthRequiredError)) {
         this.restoreSelection(initiationNonce);
         throw err;

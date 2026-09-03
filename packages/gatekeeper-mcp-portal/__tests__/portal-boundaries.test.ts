@@ -207,9 +207,7 @@ describe("per-Vault account boundary", () => {
     expect(gatekeeperFactory).toHaveBeenCalledWith({
       props: expect.objectContaining({
         accountObjectId: "account-id",
-        vaultAccountKey: "account-public-key",
-        vaultCredentialGeneration: 3,
-        vaultLabel: "Financeiro",
+        vaultIdentity: identity,
       }),
     });
     expect(JSON.stringify(gatekeeperFactory.mock.calls)).not.toContain("token");
@@ -248,6 +246,59 @@ describe("per-Vault account boundary", () => {
     await expect(account.getVaultConnection(ENDPOINT, 3))
       .rejects.toThrow(/older Vault token/);
     expect(JSON.stringify(await account.getVaultIdentity())).not.toContain("current-secret");
+  });
+
+  it("keeps the previous Vault credential when a repointed endpoint rejects its replacement", async () => {
+    const previousCredential = {
+      accountKey: "account-public-key",
+      credentialGeneration: 4,
+      label: "Financeiro",
+      token: "previous-secret",
+    };
+    const previousServer = {
+      endpoint: "https://old-vault.example/mcp",
+      auth: "token" as const,
+      provenance: "deployment" as const,
+      serverId: "portal",
+      serverName: "ScaleOS Vault",
+    };
+    const values = new Map<string, unknown>([
+      ["server", previousServer],
+      ["vaultCredential", previousCredential],
+    ]);
+    const ctx = {
+      id: { toString: () => "account-id" },
+      storage: {
+        setAlarm: vi.fn(async () => undefined),
+        deleteAlarm: vi.fn(async () => undefined),
+        kv: {
+          get: (key: string) => values.get(key),
+          put: (key: string, value: unknown) => values.set(key, value),
+          delete: (key: string) => values.delete(key),
+        },
+      },
+    };
+    const account = new McpAccount(ctx as never, {
+      MCP_PORTAL_URL: ENDPOINT,
+      MCP_PORTAL_NAME: "ScaleOS Vault",
+      MCP_PORTAL_AUTH: "vault-token",
+    } as never);
+    const nonce = "e".repeat(64);
+    await account.prepareReconnect(nonce);
+    vi.stubGlobal("fetch", async () => { throw new Error("candidate refused"); });
+
+    await expect(account.beginVaultTokenConnect(nonce, {
+      label: "Financeiro novo",
+      token: "rejected-secret",
+    })).rejects.toThrow();
+
+    await expect(account.getVaultIdentity()).resolves.toEqual({
+      accountKey: previousCredential.accountKey,
+      credentialGeneration: previousCredential.credentialGeneration,
+      label: previousCredential.label,
+    });
+    await expect(account.getServer()).resolves.toEqual(previousServer);
+    expect(values.get("stagedVaultCredential")).toBeUndefined();
   });
 });
 

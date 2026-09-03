@@ -345,10 +345,11 @@ async function continueVaultTokenConnect(
   try {
     outcome = await account.beginVaultTokenConnect(
       initiationNonce, parsed.value);
-  } catch {
+  } catch (err) {
     logger.warn("vault token connect failed", {
       event: "connect.vault-token.failed",
       serverHost: hostOf(config.endpoint),
+      error: err,
     });
     return htmlResponse(vaultTokenFormHtml({
       actionUrl: request.url,
@@ -507,9 +508,6 @@ export class McpAccount extends McpAccountBase<Env> {
     const server = portalServer(config);
 
     const active = this.ctx.storage.kv.get<StoredVaultCredential>(VAULT_CREDENTIAL_KEY);
-    const previousServer = this.server();
-    const repointed = previousServer !== undefined &&
-      !sameEndpoint(previousServer.endpoint, server.endpoint);
     const staged: StoredVaultCredential = {
       accountKey: active?.accountKey ?? generateNonce().slice(0, 16),
       credentialGeneration: (active?.credentialGeneration ?? 0) + 1,
@@ -520,7 +518,6 @@ export class McpAccount extends McpAccountBase<Env> {
     return this.beginConnectWithPreissuedCredential(initiationNonce, server, {
       stage: () => {
         this.ctx.storage.kv.put(STAGED_VAULT_CREDENTIAL_KEY, staged);
-        if (repointed) this.ctx.storage.kv.delete(VAULT_CREDENTIAL_KEY);
       },
       commit: () => {
         this.ctx.storage.kv.put(VAULT_CREDENTIAL_KEY, staged);
@@ -704,9 +701,7 @@ export class GatekeeperUserImpl
       serverName: config.name,
       scopeServerName: upstream?.name ?? scope.serverId,
       scope,
-      vaultAccountKey: vaultIdentity?.accountKey,
-      vaultCredentialGeneration: vaultIdentity?.credentialGeneration,
-      vaultLabel: vaultIdentity?.label,
+      vaultIdentity: vaultIdentity ?? undefined,
     };
     return { class: this.ctx.exports.McpGatekeeperImpl({ props }), resource };
   }
@@ -867,10 +862,8 @@ type McpGatekeeperImplProps = {
   scopeServerName?: string;
   // How much of one upstream server this binding may call.
   scope: ToolScope & { serverId: string };
-  // Present only for per-Vault user tokens. All fields are non-secret presentation or version data.
-  vaultAccountKey?: string;
-  vaultCredentialGeneration?: number;
-  vaultLabel?: string;
+  // Present only for per-Vault user tokens. Every field is non-secret presentation or version data.
+  vaultIdentity?: VaultIdentity;
 };
 
 export class McpGatekeeperImpl
@@ -885,11 +878,11 @@ export class McpGatekeeperImpl
   }
 
   protected account(): ConnectionAccount {
-    if (this.ctx.props.vaultCredentialGeneration !== undefined) {
+    if (this.ctx.props.vaultIdentity) {
       return this.ctx.exports.McpCredentialAccount({
         props: {
           accountObjectId: this.ctx.props.accountObjectId,
-          credentialGeneration: this.ctx.props.vaultCredentialGeneration,
+          credentialGeneration: this.ctx.props.vaultIdentity.credentialGeneration,
         },
       });
     }
@@ -911,8 +904,8 @@ export class McpGatekeeperImpl
 
   // How this binding's breadth reads to a human, for approval prompts and the bindings list.
   #scopeLabel(): string {
-    const { scope, serverName, scopeServerName, vaultLabel } = this.ctx.props;
-    if (vaultLabel) return `${serverName} / ${vaultLabel}`;
+    const { scope, serverName, scopeServerName, vaultIdentity } = this.ctx.props;
+    if (vaultIdentity) return `${serverName} / ${vaultIdentity.label}`;
     return `${serverName} / ${scopeServerName ?? scope.serverId}`;
   }
 
@@ -948,8 +941,8 @@ export class McpGatekeeperImpl
   // server produce the same id. `sessionTypeName` is what separates them, from the scoped resource
   // URL.
   #bindingId(): string {
-    const { scope, serverId, vaultAccountKey } = this.ctx.props;
-    if (vaultAccountKey) return `vault-${vaultAccountKey}`;
+    const { scope, serverId, vaultIdentity } = this.ctx.props;
+    if (vaultIdentity) return `vault-${vaultIdentity.accountKey}`;
     return `${serverId}-${scope.serverId}`;
   }
 
@@ -959,7 +952,7 @@ export class McpGatekeeperImpl
    * merely because both portals expose a tool with the same name.
    */
   protected get actionScopeTag(): string {
-    const generation = this.ctx.props.vaultCredentialGeneration;
+    const generation = this.ctx.props.vaultIdentity?.credentialGeneration;
     const credential = generation === undefined ? "" : `:${generation}`;
     return `mcp-portal:${endpointTag(this.ctx.props.endpoint)}:${this.#bindingId()}${credential}`;
   }
