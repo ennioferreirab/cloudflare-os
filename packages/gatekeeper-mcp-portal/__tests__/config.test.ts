@@ -58,6 +58,11 @@ describe("readPortalConfig", () => {
     }));
     expect(configured?.name).toBe("Cloudflare MCP Portal");
     expect(configured?.auth).toBe("token");
+
+    expect(readPortalConfig(env({
+      MCP_PORTAL_URL: "https://vault.example.com/mcp",
+      MCP_PORTAL_AUTH: "VAULT-TOKEN",
+    }))?.auth).toBe("vault-token");
   });
 
   it("falls back to oauth for an unrecognized auth kind", () => {
@@ -226,6 +231,18 @@ describe("portal server visibility", () => {
       .toThrow(/native connector/);
     expect(() => requirePortalServerVisible(configured, "gitlab-mcp-server")).not.toThrow();
   });
+
+  it("limits a Vault-token connection to the Vault upstream", () => {
+    const vault = env({
+      MCP_PORTAL_URL: "https://vault.scaleos.pro/mcp",
+      MCP_PORTAL_AUTH: "vault-token",
+    });
+    expect(isPortalServerHidden(vault, "vault")).toBe(false);
+    expect(isPortalServerHidden(vault, "github")).toBe(true);
+    expect(() => requirePortalServerVisible(vault, "vault")).not.toThrow();
+    expect(() => requirePortalServerVisible(vault, "github"))
+      .toThrow(/only grant the vault server/);
+  });
 });
 
 describe("portalTokenFor", () => {
@@ -242,7 +259,7 @@ describe("portalTokenFor", () => {
   });
 
   it("withholds the token when the deployment no longer uses token auth", () => {
-    for (const auth of ["oauth", "none"]) {
+    for (const auth of ["oauth", "none", "vault-token"]) {
       expect(portalTokenFor(env({
         MCP_PORTAL_URL: OLD, MCP_PORTAL_AUTH: auth, MCP_PORTAL_TOKEN: "old-secret",
       }), OLD)).toBeNull();

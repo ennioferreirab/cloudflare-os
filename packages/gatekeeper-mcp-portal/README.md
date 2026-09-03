@@ -50,7 +50,7 @@ within the explicit scan limits above; exceeding a limit fails rather than prete
 | --- | --- |
 | `MCP_PORTAL_URL` | The portal's MCP endpoint. Unset means the connector hides itself. |
 | `MCP_PORTAL_NAME` | Display name in the connector list and every approval prompt. Defaults to `MCP Server Portal (<host>)`. |
-| `MCP_PORTAL_AUTH` | `oauth` (default), `none`, or `token`. |
+| `MCP_PORTAL_AUTH` | `oauth` (default), `none`, `token`, or `vault-token`. |
 | `MCP_PORTAL_TOKEN` | Secret bearer token, for `MCP_PORTAL_AUTH: "token"`. |
 | `MCP_PORTAL_TRUST_ANNOTATIONS` | `true` to let upstream tool annotations drive auto-approval. Off by default; see below. |
 | `MCP_PORTAL_HIDDEN_SERVER_IDS` | Comma-separated upstream server IDs to hide from the configurator and refuse at the grant boundary. |
@@ -90,11 +90,20 @@ a rule for each action kind.
 
 ## How the connect flow works
 
-There is no connect form: the endpoint is a deployment setting, so pressing "connect" goes straight
-to the portal's own sign-in. Under `MCP_PORTAL_AUTH: "oauth"` the gatekeeper runs the same
+The endpoint is always a deployment setting, so users never enter or change its URL. Under
+`MCP_PORTAL_AUTH: "oauth"` the gatekeeper runs the same
 discovery chain as [`gatekeeper-mcp`](../gatekeeper-mcp/README.md#how-the-connect-flow-works)
 against the portal; under `"token"` it presents `MCP_PORTAL_TOKEN` and no user interaction is
-needed; under `"none"` it connects unauthenticated.
+needed; under `"none"` it connects unauthenticated. The `"vault-token"` mode is for ScaleOS Vault:
+the connect page asks for a non-secret Vault name and one bearer token. Each submission creates one
+independent connected account, so users add more Vaults through "Use another account" and choose
+the desired account when creating each binding. Tokens stay in the account Durable Object and are
+never placed in resource URLs, facet props, logs, or Gadget code.
+
+Replacing a Vault token increments a credential generation. Existing bindings fail closed and must
+be replaced, because the new token may name a different Vault even though the endpoint and MCP tool
+names are unchanged. Approval policy is namespaced by the account key and credential generation for
+the same reason.
 
 The account records `provenance: "deployment"`, which is what keeps an upstream server from renaming
 itself over `MCP_PORTAL_NAME` in every approval prompt.

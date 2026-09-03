@@ -21,8 +21,8 @@ export type PortalConfig = {
   endpoint: string;
   /** Display name shown in the connector list and in every approval prompt. */
   name: string;
-  /** How to authenticate. */
-  auth: ServerAuthKind;
+  /** How to authenticate. `vault-token` means one user-entered token per connected account. */
+  auth: ServerAuthKind | "vault-token";
 };
 
 /** Stable id used in binding names, action kinds, and generated type names. */
@@ -43,6 +43,7 @@ export function portalTrust(env: Env): ServerTrust {
 /** Whether an upstream server is hidden by deployment configuration. */
 export function isPortalServerHidden(env: Env, serverId: string): boolean {
   if (!serverId) return false;
+  if (readPortalConfig(env)?.auth === "vault-token" && serverId !== "vault") return true;
   return (env.MCP_PORTAL_HIDDEN_SERVER_IDS ?? "")
     .split(",")
     .some(hiddenId => hiddenId.trim() === serverId);
@@ -53,6 +54,9 @@ export function isPortalServerHidden(env: Env, serverId: string): boolean {
  * not authority: an agent can supply a resource URL directly.
  */
 export function requirePortalServerVisible(env: Env, serverId: string): void {
+  if (readPortalConfig(env)?.auth === "vault-token" && serverId !== "vault") {
+    throw new Error("A ScaleOS Vault connection can only grant the vault server.");
+  }
   if (!isPortalServerHidden(env, serverId)) return;
   throw new Error(
     `The portal server "${serverId}" is available through its native connector instead.`,
@@ -88,8 +92,10 @@ export function readPortalConfig(env: Env): PortalConfig | null {
   url.hash = "";
 
   const configured = env.MCP_PORTAL_AUTH?.trim().toLowerCase();
-  const auth: ServerAuthKind =
-    configured === "none" || configured === "token" ? configured : "oauth";
+  const auth: PortalConfig["auth"] =
+    configured === "none" || configured === "token" || configured === "vault-token"
+      ? configured
+      : "oauth";
 
   return {
     endpoint: url.toString(),
@@ -193,7 +199,7 @@ export function portalServer(config: PortalConfig): ConnectedServer {
   return {
     endpoint: config.endpoint,
     provenance: "deployment",
-    auth: config.auth,
+    auth: config.auth === "vault-token" ? "token" : config.auth,
     serverId: PORTAL_SERVER_ID,
     serverName: config.name,
   };
@@ -204,9 +210,10 @@ export function portalServer(config: PortalConfig): ConnectedServer {
  * so entering or leaving that mode requires the account to reconnect against current configuration.
  */
 export function portalAuthRequiresReconnect(
-  connected: ServerAuthKind, configured: ServerAuthKind,
+  connected: ServerAuthKind, configured: PortalConfig["auth"],
 ): boolean {
-  return (connected === "token") !== (configured === "token");
+  return (connected === "token") !==
+    (configured === "token" || configured === "vault-token");
 }
 
 /**

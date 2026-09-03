@@ -111,6 +111,25 @@ export type ConnectOutcome =
   | { kind: "redirect"; url: string }
   | { kind: "invalid" };
 
+/**
+ * Connector-owned storage transition for a user-supplied bearer token.
+ *
+ * The base account claims the connect nonce before calling `stage`, probes with the staged token,
+ * then calls `commit` before publishing the account to the Workshop. A failed attempt calls
+ * `discard`, leaving an existing credential untouched. All three operations must be synchronous
+ * Durable Object storage mutations and must never log or return the credential. During an endpoint
+ * repoint, `stage` must retain the active credential and `staticToken()` must serve the candidate
+ * only to the target endpoint; the base may restore the previous server when validation fails.
+ */
+export type PreissuedCredentialAttempt = {
+  /** Make the candidate credential available to `staticToken()`. */
+  stage(): void;
+  /** Promote the staged credential after the endpoint accepts it. */
+  commit(): void;
+  /** Delete the staged credential after a failed attempt. */
+  discard(): void;
+};
+
 // A single-use secret in the connect flow, and the stage it belongs to.
 type StoredNonce = {
   value: string;
@@ -297,9 +316,42 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
   async beginConnect(
     initiationNonce: string, target: ConnectedServer | null,
   ): Promise<ConnectOutcome> {
+    return this.beginConnectAttempt(initiationNonce, target);
+  }
+
+  /**
+   * Runs the normal connect state machine with a connector-owned preissued credential transition.
+   * This is protected so a credential-bearing transition can only originate inside the account DO;
+   * it never becomes an RPC argument or crosses into the Workshop.
+   */
+  protected async beginConnectWithPreissuedCredential(
+    initiationNonce: string,
+    target: ConnectedServer | null,
+    attempt: PreissuedCredentialAttempt,
+  ): Promise<ConnectOutcome> {
+    return this.beginConnectAttempt(initiationNonce, target, attempt);
+  }
+
+  private async beginConnectAttempt(
+    initiationNonce: string,
+    target: ConnectedServer | null,
+    attempt?: PreissuedCredentialAttempt,
+  ): Promise<ConnectOutcome> {
     const existing = this.server();
     const server = resolveConnectTarget(existing, target);
     if (!server || !this.claimSelection(initiationNonce)) return { kind: "invalid" };
+
+    if (attempt && server.auth !== "token") {
+      this.restoreSelection(initiationNonce);
+      throw new Error("A preissued credential can only connect to a token-authenticated endpoint.");
+    }
+
+    try {
+      attempt?.stage();
+    } catch (err) {
+      this.restoreSelection(initiationNonce);
+      throw err;
+    }
 
     // Every claimed attempt advances the generation before its first await, invalidating old probe,
     // OAuth callback, refresh, and session writes. A repoint additionally persists the new endpoint
@@ -324,6 +376,16 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
       });
     }
 
+    let credentialCommitted = false;
+    const discardAttempt = () => {
+      attempt?.discard();
+      // The old generation is already fenced, and the connector keeps its active credential until
+      // commit, so restoring the old server cannot retarget an in-flight operation or a new token.
+      if (attempt && endpointChanged && !credentialCommitted && existing) {
+        this.ctx.storage.kv.put("server", existing);
+      }
+    };
+
     const log = this.log().with({
       serverId: server.serverId,
       serverHost: hostOf(server.endpoint),
@@ -337,6 +399,7 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
     // with the misconfiguration surfacing far from the setting that caused it. Refused here, and
     // the form stays open so an administrator can supply the token and retry.
     if (server.auth === "token" && this.staticToken(server) === null) {
+      discardAttempt();
       this.restoreSelection(initiationNonce);
       throw new Error(
         `No preissued token is configured for "${server.serverName}" on this deployment, so it ` +
@@ -357,10 +420,13 @@ export abstract class McpAccountBase<E extends AccountEnv, P = unknown>
       const connected: ConnectedServer =
         server.auth === "token" ? server : { ...server, auth: "none" };
       this.ctx.storage.kv.put("server", connected);
+      attempt?.commit();
+      credentialCommitted = attempt !== undefined;
       await this.complete(connected, info, generation);
       log.info("connected without authorization", { event: "connect.completed" });
       return { kind: "done" };
     } catch (err) {
+      discardAttempt();
       if (!(err instanceof McpAuthRequiredError)) {
         this.restoreSelection(initiationNonce);
         throw err;

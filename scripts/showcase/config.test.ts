@@ -92,6 +92,12 @@ test("backend and gatekeepers use the custom origin and persistent service names
   const context = backend.services?.find(service =>
     service.service === showcaseWorkerName("gatekeeper-context", TARGET.workerPrefix));
   assert.deepEqual(context?.props, { sharingDomain: origin });
+
+  const vault = configs.get("gatekeeper-mcp-portal");
+  assert.equal(vault?.vars?.MCP_PORTAL_URL, "https://vault.scaleos.pro/mcp");
+  assert.equal(vault?.vars?.MCP_PORTAL_NAME, "ScaleOS Vault");
+  assert.equal(vault?.vars?.MCP_PORTAL_AUTH, "vault-token");
+  assert.equal(vault?.vars?.MCP_PORTAL_TOKEN, undefined);
 });
 
 test("stateful resources remain binding-only for automatic persistent provisioning", () => {

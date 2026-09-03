@@ -250,6 +250,8 @@ const en = {
         taglineConfigured: 'Connect a server behind {{host}}',
         taglineUnavailable: 'No MCP server portal is configured',
         description: 'Use the MCP servers this organization has approved, through its MCP server portal. Reads happen straight away. Anything that writes waits for your approval.',
+        vaultTagline: 'Connect multiple Vaults with one token per Vault',
+        vaultDescription: 'Connect each ScaleOS Vault with its own token, then choose which Vaults each session can use. Reads happen straight away; writes wait for your approval.',
       },
       notion: {
         tagline: 'Read and write your Notion pages and databases',
@@ -557,6 +559,8 @@ const ptBR = {
         taglineConfigured: 'Conecte um servidor por trás de {{host}}',
         taglineUnavailable: 'Nenhum portal de servidor MCP está configurado',
         description: 'Use os servidores MCP aprovados pela sua organização por meio do portal MCP. Leituras acontecem imediatamente; qualquer operação de escrita aguarda sua aprovação.',
+        vaultTagline: 'Conecte vários Vaults com um token para cada Vault',
+        vaultDescription: 'Conecte cada ScaleOS Vault com seu próprio token e escolha quais Vaults cada sessão pode usar. Leituras acontecem imediatamente; operações de escrita aguardam sua aprovação.',
       },
       notion: {
         tagline: 'Leia e edite suas páginas e bancos de dados do Notion',
